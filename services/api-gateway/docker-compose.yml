@@ -1,0 +1,71 @@
+version: '3.9'
+
+services:
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      # Server Configuration
+      PORT: 8080
+      ENV: development
+
+      # JWT Configuration
+      JWT_SECRET: dev_jwt_secret_change_in_production
+      JWT_EXPIRATION: 24h
+
+      # Redis Configuration
+      REDIS_URL: redis:6379
+      REDIS_PASSWORD: ""
+
+      # Downstream Services (gRPC)
+      CATALOG_SERVICE_URL: catalog-service:50051
+      USER_SERVICE_URL: user-service:50052
+      CART_SERVICE_URL: cart-service:50053
+      ORDER_SERVICE_URL: order-service:50054
+      PAYMENT_SERVICE_URL: payment-service:50055
+      INVENTORY_SERVICE_URL: inventory-service:50056
+      REVIEW_SERVICE_URL: review-service:50058
+      RECOMMENDATION_SERVICE_URL: recommendation-service:50059
+      ADMIN_SERVICE_URL: admin-service:50060
+
+      # Observability
+      JAEGER_AGENT_HOST: jaeger
+      JAEGER_AGENT_PORT: 6831
+      LOG_LEVEL: info
+
+      # Rate Limiting
+      RATE_LIMIT_MAX: 100
+      RATE_LIMIT_WINDOW: 1m
+
+      # Timeouts
+      REQUEST_TIMEOUT: 30s
+      CIRCUIT_BREAKER_THRESHOLD: 5
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: api-gateway-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+
+networks:
+  bookstore-network:
+    name: bookstore-network
+    driver: bridge

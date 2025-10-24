@@ -1,0 +1,66 @@
+version: '3.9'
+
+services:
+  recommendation-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: recommendation-service
+    ports:
+      - "8089:8089"
+      - "50059:50059"
+    environment:
+      PORT: 8089
+      GRPC_PORT: 50059
+      DATABASE_URL: postgresql://bookstore:dev_password@postgres:5432/recommendations_db
+      RABBITMQ_URL: amqp://bookstore:dev_password@rabbitmq:5672/
+      CATALOG_SERVICE_URL: catalog-service:50051
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - bookstore-recommendation-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: bookstore
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: recommendations_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookstore"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bookstore-recommendation-network
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: bookstore
+      RABBITMQ_DEFAULT_PASS: dev_password
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - bookstore-recommendation-network
+
+volumes:
+  postgres_data:
+
+networks:
+  bookstore-recommendation-network:
+    driver: bridge

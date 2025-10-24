@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package order;
+
+import "common.proto";
+
+option go_package = "github.com/youngermaster/distributed-bookstore/proto/order";
+
+service OrderService {
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
+  rpc UpdateOrderStatus(UpdateOrderStatusRequest) returns (common.SuccessResponse);
+  rpc CancelOrder(CancelOrderRequest) returns (common.SuccessResponse);
+}
+
+message CreateOrderRequest {
+  string user_id = 1;
+  repeated OrderItem items = 2;
+  string shipping_address_id = 3;
+  string payment_method = 4;
+}
+
+message CreateOrderResponse {
+  string order_id = 1;
+  string status = 2;
+  double total_amount = 3;
+}
+
+message OrderItem {
+  string book_id = 1;
+  int32 quantity = 2;
+  double unit_price = 3;
+}
+
+message GetOrderRequest {
+  string order_id = 1;
+}
+
+message GetOrderResponse {
+  string id = 1;
+  string user_id = 2;
+  string status = 3;
+  double total_amount = 4;
+  repeated OrderItem items = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+message UpdateOrderStatusRequest {
+  string order_id = 1;
+  string new_status = 2;
+}
+
+message CancelOrderRequest {
+  string order_id = 1;
+  string reason = 2;
+}

@@ -1,0 +1,45 @@
+version: '3.9'
+
+services:
+  cart-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cart-service
+    ports:
+      - "8083:8083"
+      - "50053:50053"
+    environment:
+      HTTP_PORT: 8083
+      GRPC_PORT: 50053
+      REDIS_URL: redis:6379
+      RABBITMQ_URL: amqp://bookstore:dev_password@rabbitmq:5672/
+      CATALOG_SERVICE_URL: catalog-service:50051
+      JAEGER_AGENT_HOST: jaeger
+      JAEGER_AGENT_PORT: 6831
+      LOG_LEVEL: info
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: cart-service-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+
+networks:
+  bookstore-network:
+    name: bookstore-cart-service-network
+    driver: bridge

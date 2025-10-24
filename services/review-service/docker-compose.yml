@@ -1,0 +1,66 @@
+version: '3.9'
+
+services:
+  review-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: review-service
+    ports:
+      - "8088:8088"
+      - "50058:50058"
+    environment:
+      PORT: 8088
+      GRPC_PORT: 50058
+      DATABASE_URL: postgresql://bookstore:dev_password@postgres:5432/reviews_db
+      RABBITMQ_URL: amqp://bookstore:dev_password@rabbitmq:5672/
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - bookstore-review-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: bookstore
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: reviews_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookstore"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bookstore-review-network
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: bookstore
+      RABBITMQ_DEFAULT_PASS: dev_password
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - bookstore-review-network
+
+volumes:
+  postgres_data:
+
+networks:
+  bookstore-review-network:
+    driver: bridge

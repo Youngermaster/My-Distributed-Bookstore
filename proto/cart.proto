@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package cart;
+
+import "common.proto";
+
+option go_package = "github.com/youngermaster/distributed-bookstore/proto/cart";
+
+service CartService {
+  rpc GetCart(GetCartRequest) returns (GetCartResponse);
+  rpc AddItem(AddItemRequest) returns (CartResponse);
+  rpc UpdateItem(UpdateItemRequest) returns (CartResponse);
+  rpc RemoveItem(RemoveItemRequest) returns (CartResponse);
+  rpc ClearCart(ClearCartRequest) returns (common.SuccessResponse);
+}
+
+message GetCartRequest {
+  string user_id = 1;
+}
+
+message GetCartResponse {
+  repeated CartItem items = 1;
+  double total = 2;
+  string updated_at = 3;
+}
+
+message CartItem {
+  string book_id = 1;
+  string title = 2;
+  int32 quantity = 3;
+  double unit_price = 4;
+  double subtotal = 5;
+}
+
+message AddItemRequest {
+  string user_id = 1;
+  string book_id = 2;
+  int32 quantity = 3;
+}
+
+message UpdateItemRequest {
+  string user_id = 1;
+  string book_id = 2;
+  int32 quantity = 3;
+}
+
+message RemoveItemRequest {
+  string user_id = 1;
+  string book_id = 2;
+}
+
+message ClearCartRequest {
+  string user_id = 1;
+}
+
+message CartResponse {
+  repeated CartItem items = 1;
+  double total = 2;
+}

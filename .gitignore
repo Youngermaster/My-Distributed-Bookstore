@@ -1,32 +1,84 @@
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
-# Binaries for programs and plugins
+# Dependencies
+node_modules/
+vendor/
+__pycache__/
+*.pyc
+venv/
+env/
+.venv/
+
+# Build outputs
+dist/
+build/
 *.exe
-*.exe~
 *.dll
 *.so
 *.dylib
-
-# Test binary, built with `go test -c`
-*.test
-
-# Code coverage profiles and other test artifacts
+bin/
 *.out
-coverage.*
-*.coverprofile
-profile.cov
+target/
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
 
-# Go workspace file
-go.work
-go.work.sum
-
-# env file
+# Environment variables
 .env
+.env.local
+.env.*.local
+*.env
 
-# Editor/IDE
-# .idea/
-# .vscode/
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Go
+go.sum
+
+# Python
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Docker
+docker-compose.override.yml
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Generated files
+proto/generated/
+*.pb.go
+*_pb2.py
+*_pb2_grpc.py
+
+# Secrets
+secrets/
+*.pem
+*.key
+*.crt
+
+# Project specific
+Cronograma-Grupo-5.pdf
+PDF-CaseStudy-BookStore-2025-2.pdf
+Taller*.xlsx

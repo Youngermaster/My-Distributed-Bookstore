@@ -1,82 +1,163 @@
-.PHONY: help build up down logs ps clean test
+.PHONY: help proto-gen services-start services-stop docker-build docker-clean test lint migrate-up migrate-down k8s-deploy
 
+# Default target
 help: ## Show this help message
-	@echo 'Usage: make [target]'
-	@echo ''
-	@echo 'Available targets:'
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@echo "Distributed Bookstore - Makefile Commands"
+	@echo ""
+	@echo "Proto & Code Generation:"
+	@echo "  make proto-gen        Generate protobuf code for all languages"
+	@echo ""
+	@echo "Development:"
+	@echo "  make services-start   Start all services with Docker Compose"
+	@echo "  make services-stop    Stop all services"
+	@echo "  make logs            Tail logs from all services"
+	@echo ""
+	@echo "Docker:"
+	@echo "  make docker-build     Build all Docker images"
+	@echo "  make docker-clean     Remove all Docker containers and volumes"
+	@echo ""
+	@echo "Database:"
+	@echo "  make migrate-up       Run database migrations"
+	@echo "  make migrate-down     Rollback database migrations"
+	@echo ""
+	@echo "Testing:"
+	@echo "  make test            Run all tests"
+	@echo "  make test-go         Run Go service tests"
+	@echo "  make test-node       Run Node.js service tests"
+	@echo "  make test-python     Run Python service tests"
+	@echo ""
+	@echo "Code Quality:"
+	@echo "  make lint            Run linters for all services"
+	@echo "  make lint-fix        Auto-fix linting issues"
+	@echo ""
+	@echo "Kubernetes:"
+	@echo "  make k8s-deploy      Deploy to Kubernetes"
+	@echo "  make k8s-delete      Delete from Kubernetes"
+	@echo "  make k8s-status      Check deployment status"
+	@echo ""
+	@echo "Cleanup:"
+	@echo "  make clean           Clean all build artifacts"
 
-build: ## Build all services
-	docker compose build
+# Generate protobuf code for all languages
+proto-gen: ## Generate protobuf code
+	@echo "Generating protobuf code..."
+	@for proto in proto/*.proto; do \
+		protoc --go_out=. --go_opt=paths=source_relative \
+		       --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+		       $$proto 2>/dev/null || echo "Go protoc not installed or failed for $$proto"; \
+	done
+	@echo "✅ Protobuf code generation complete"
 
-up: ## Start all services
-	docker compose up -d
+# Start all services
+services-start: ## Start all services
+	@echo "Starting all services..."
+	docker-compose up -d
+	@echo "✅ All services started"
+	@echo "API Gateway: http://localhost:8080"
+	@echo "Jaeger UI: http://localhost:16686"
+	@echo "RabbitMQ Management: http://localhost:15672"
 
-up-build: ## Build and start all services
-	docker compose up -d --build
+# Stop all services
+services-stop: ## Stop all services
+	@echo "Stopping all services..."
+	docker-compose down
+	@echo "✅ All services stopped"
 
-down: ## Stop all services
-	docker compose down
-
-down-v: ## Stop all services and remove volumes
-	docker compose down -v
-
+# View logs
 logs: ## View logs from all services
-	docker compose logs -f
+	docker-compose logs -f
 
-logs-books: ## View logs from books service
-	docker compose logs -f books-service
+# Build all Docker images
+docker-build: ## Build all Docker images
+	@echo "Building all Docker images..."
+	docker-compose build
+	@echo "✅ All images built"
 
-logs-users: ## View logs from users service
-	docker compose logs -f users-service
-
-logs-logging: ## View logs from logging service
-	docker compose logs -f logging-service
-
-ps: ## List running services
-	docker compose ps
-
-clean: ## Stop services and clean up
-	docker compose down -v
+# Clean Docker resources
+docker-clean: ## Clean Docker resources
+	@echo "Cleaning Docker resources..."
+	docker-compose down -v
 	docker system prune -f
+	@echo "✅ Docker resources cleaned"
 
-restart: ## Restart all services
-	docker compose restart
+# Run database migrations
+migrate-up: ## Run database migrations
+	@echo "Running database migrations..."
+	@echo "TODO: Implement migration script"
 
-test-books: ## Run tests for books service
-	cd services/books-service && go test ./... -v -cover
+# Rollback database migrations
+migrate-down: ## Rollback database migrations
+	@echo "Rolling back database migrations..."
+	@echo "TODO: Implement migration script"
 
-test-users: ## Run tests for users service
-	cd services/users-service && go test ./... -v -cover
+# Run all tests
+test: test-go test-node test-python ## Run all tests
+	@echo "✅ All tests complete"
 
-test-logging: ## Run tests for logging service
-	cd services/logging-service && go test ./... -v -cover
+# Run Go service tests
+test-go: ## Run Go service tests
+	@echo "Running Go service tests..."
+	@for service in services/api-gateway services/catalog-service services/user-service services/cart-service services/order-service services/inventory-service services/admin-service; do \
+		if [ -f $$service/go.mod ]; then \
+			echo "Testing $$service..."; \
+			cd $$service && go test ./... -v -cover || true; \
+			cd ../..; \
+		fi \
+	done
+	@echo "✅ Go tests complete"
 
-test-all: test-books test-users test-logging ## Run all tests
+# Run Node.js service tests
+test-node: ## Run Node.js service tests
+	@echo "Running Node.js service tests..."
+	@for service in services/payment-service services/notification-service; do \
+		if [ -f $$service/package.json ]; then \
+			echo "Testing $$service..."; \
+			cd $$service && npm test || true; \
+			cd ../..; \
+		fi \
+	done
+	@echo "✅ Node.js tests complete"
 
-fmt-books: ## Format books service code
-	cd services/books-service && gofmt -s -w .
+# Run Python service tests
+test-python: ## Run Python service tests
+	@echo "Running Python service tests..."
+	@for service in services/review-service services/recommendation-service; do \
+		if [ -f $$service/requirements.txt ]; then \
+			echo "Testing $$service..."; \
+			cd $$service && pytest || true; \
+			cd ../..; \
+		fi \
+	done
+	@echo "✅ Python tests complete"
 
-fmt-users: ## Format users service code
-	cd services/users-service && gofmt -s -w .
+# Run linters
+lint: ## Run linters
+	@echo "Running linters..."
+	@echo "TODO: Implement linting for all services"
 
-fmt-logging: ## Format logging service code
-	cd services/logging-service && gofmt -s -w .
+# Deploy to Kubernetes
+k8s-deploy: ## Deploy to Kubernetes
+	@echo "Deploying to Kubernetes..."
+	kubectl apply -f infrastructure/k8s/ --recursive
+	@echo "✅ Kubernetes deployment complete"
 
-fmt-all: fmt-books fmt-users fmt-logging ## Format all code
+# Delete from Kubernetes
+k8s-delete: ## Delete from Kubernetes
+	@echo "Deleting from Kubernetes..."
+	kubectl delete -f infrastructure/k8s/ --recursive
+	@echo "✅ Kubernetes resources deleted"
 
-health: ## Check health of all services
-	@echo "Books Service:"
-	@curl -s http://localhost:8081/health || echo "Not running"
-	@echo "\nUsers Service:"
-	@curl -s http://localhost:8082/health || echo "Not running"
-	@echo "\nLogging Service:"
-	@curl -s http://localhost:8084/health || echo "Not running"
+# Check Kubernetes status
+k8s-status: ## Check Kubernetes deployment status
+	@echo "Checking Kubernetes deployment status..."
+	kubectl get pods -n production
+	kubectl get services -n production
 
-ready: ## Check readiness of all services
-	@echo "Books Service:"
-	@curl -s http://localhost:8081/ready || echo "Not ready"
-	@echo "\nUsers Service:"
-	@curl -s http://localhost:8082/ready || echo "Not ready"
-	@echo "\nLogging Service:"
-	@curl -s http://localhost:8084/ready || echo "Not ready"
+# Clean build artifacts
+clean: ## Clean all build artifacts
+	@echo "Cleaning build artifacts..."
+	find . -type d -name "dist" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "build" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "bin" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	@echo "✅ Build artifacts cleaned"

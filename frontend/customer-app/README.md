@@ -1,73 +1,109 @@
-# React + TypeScript + Vite
+# Customer App (Frontend)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Overview
 
-Currently, two official plugins are available:
+React-based customer-facing web application for the distributed bookstore system.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Technology Stack
 
-## React Compiler
+- **Language**: TypeScript
+- **Framework**: React 18+
+- **UI Library**: shadcn/ui
+- **Styling**: Tailwind CSS
+- **State Management**: Zustand
+- **Data Fetching**: TanStack Query v5
+- **Routing**: React Router v6
+- **Build Tool**: Vite
+- **Package Manager**: npm
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Project Structure
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+customer-app/
+├── src/
+│   ├── components/
+│   │   ├── ui/              # shadcn/ui components
+│   │   ├── layout/          # Header, Footer, Sidebar
+│   │   ├── books/           # Book-related components
+│   │   ├── cart/            # Cart components
+│   │   ├── orders/          # Order components
+│   │   └── auth/            # Authentication components
+│   ├── pages/
+│   │   ├── HomePage.tsx
+│   │   ├── BookDetailsPage.tsx
+│   │   ├── SearchPage.tsx
+│   │   ├── CartPage.tsx
+│   │   ├── CheckoutPage.tsx
+│   │   ├── OrderHistoryPage.tsx
+│   │   └── ProfilePage.tsx
+│   ├── api/                 # API client (Axios)
+│   ├── hooks/               # Custom React hooks
+│   ├── store/               # Zustand stores
+│   ├── types/               # TypeScript type definitions
+│   ├── utils/               # Utility functions
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css
+├── public/
+├── Dockerfile
+├── nginx.conf
+├── package.json
+├── tsconfig.json
+├── tailwind.config.js
+├── vite.config.ts
+└── README.md
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Features
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- Book browsing and search
+- Shopping cart management
+- User authentication (JWT)
+- Order placement and tracking
+- User profile management
+- Responsive design
+- Dark mode support
+- Book reviews and ratings
+- Personalized recommendations
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Getting Started
+
+```bash
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+
+# Run tests
+npm test
 ```
+
+## Environment Variables
+
+Create a `.env` file:
+
+```bash
+VITE_API_URL=http://localhost:8080/api/v1
+VITE_APP_NAME=Bookstore
+```
+
+## Next Steps
+
+- [ ] Initialize Vite + React + TypeScript project
+- [ ] Install and configure shadcn/ui
+- [ ] Setup Tailwind CSS
+- [ ] Create API client with Axios
+- [ ] Setup TanStack Query
+- [ ] Setup Zustand stores
+- [ ] Create UI components
+- [ ] Implement pages
+- [ ] Add authentication flow
+- [ ] Write tests
+- [ ] Configure production build
