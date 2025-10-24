@@ -3,14 +3,12 @@ FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies
+# Install build dependencies
 RUN apk add --no-cache git
 
 # Copy go mod files
-COPY go.mod go.sum* ./
-
-# Download dependencies
-RUN if [ -f go.sum ]; then go mod download; fi
+COPY go.mod go.sum ./
+RUN go mod download
 
 # Copy source code
 COPY . .
@@ -28,8 +26,11 @@ WORKDIR /root/
 # Copy binary from builder
 COPY --from=builder /app/main .
 
-# Copy migrations if they exist
-COPY --from=builder /app/migrations ./migrations 2>/dev/null || true
+# Create non-root user
+RUN adduser -D -u 1001 appuser && \
+    chown -R appuser:appuser /root
+
+USER appuser
 
 # Expose ports
 EXPOSE 8082 50052
