@@ -1,42 +1,26 @@
-# Build stage
-FROM golang:1.21-alpine AS builder
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install dependencies
-RUN apk add --no-cache git
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy go mod files
-COPY go.mod go.sum* ./
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Download dependencies
-RUN if [ -f go.sum ]; then go mod download; fi
-
-# Copy source code
 COPY . .
 
-# Build binary
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/server/main.go
+RUN useradd -m -u 1001 appuser && \
+    chown -R appuser:appuser /app
 
-# Final stage
-FROM alpine:3.18
+USER appuser
 
-RUN apk --no-cache add ca-certificates tzdata
+EXPOSE 8086
 
-WORKDIR /root/
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8086/health')" || exit 1
 
-# Copy binary from builder
-COPY --from=builder /app/main .
-
-# Copy migrations if they exist
-COPY --from=builder /app/migrations ./migrations 2>/dev/null || true
-
-# Expose ports
-EXPOSE 8086 50056
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8086/health || exit 1
-
-# Run
-CMD ["./main"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8086"]

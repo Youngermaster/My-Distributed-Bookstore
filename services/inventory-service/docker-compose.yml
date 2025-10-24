@@ -8,36 +8,27 @@ services:
     container_name: inventory-service
     ports:
       - "8086:8086"
-      - "50056:50056"
     environment:
-      HTTP_PORT: 8086
-      GRPC_PORT: 50056
-      DATABASE_URL: postgresql://bookstore:dev_password@postgres:5432/inventory_db?sslmode=disable
-      REDIS_URL: redis:6379
-      RABBITMQ_URL: amqp://bookstore:dev_password@rabbitmq:5672/
-      JAEGER_AGENT_HOST: jaeger
-      JAEGER_AGENT_PORT: 6831
-      LOG_LEVEL: info
+      DEBUG: "True"
+      DATABASE_URL: postgresql+asyncpg://bookstore:dev_password@postgres:5432/inventory_db
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
     networks:
-      - bookstore-network
+      - bookstore-inventory-network
     restart: unless-stopped
+    volumes:
+      - ./app:/app/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8086 --reload
 
   postgres:
     image: postgres:15-alpine
-    container_name: inventory-service-postgres
     environment:
       POSTGRES_USER: bookstore
       POSTGRES_PASSWORD: dev_password
       POSTGRES_DB: inventory_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -46,45 +37,11 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - bookstore-network
-    restart: unless-stopped
-
-  redis:
-    image: redis:7-alpine
-    container_name: inventory-service-redis
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-    networks:
-      - bookstore-network
-    restart: unless-stopped
-
-  rabbitmq:
-    image: rabbitmq:3.12-management-alpine
-    container_name: inventory-service-rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: bookstore
-      RABBITMQ_DEFAULT_PASS: dev_password
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    networks:
-      - bookstore-network
-    restart: unless-stopped
+      - bookstore-inventory-network
 
 volumes:
   postgres_data:
 
 networks:
-  bookstore-network:
-    name: bookstore-inventory-service-network
+  bookstore-inventory-network:
     driver: bridge

@@ -1,43 +1,224 @@
-# Inventory Service
+# Inventory Service (FastAPI)
 
 ## Overview
 
-Manages real-time stock tracking, reservations, and inventory movements.
+The Inventory Service manages real-time stock tracking, reservations, and inventory movements for the distributed bookstore system.
 
-## Technology Stack
+## ✨ Features
 
-- **Language**: Go 1.21+
-- **Framework**: Fiber v2
-- **ORM**: GORM
-- **Database**: PostgreSQL 15
-- **Messaging**: RabbitMQ
-- **Ports**: HTTP: 8086, gRPC: 50056
+- 🔜 **Real-time stock tracking** (available & reserved quantities)
+- 🔜 **Stock reservations** for pending orders
+- 🔜 **Automatic reservation expiry** (15-minute timeout)
+- 🔜 **Stock movement history** (audit trail)
+- 🔜 **Low stock alerts**
+- 🔜 **Multi-warehouse support** (future)
+- ✅ **FastAPI 0.115+ with standard dependencies**
+- ✅ **Async database operations** with SQLAlchemy 2.0
+- ✅ **Docker ready**
+- ✅ **gRPC folder structure** (for future inter-service communication)
 
-## Responsibilities
+## 🛠 Tech Stack
 
-- Real-time stock tracking
-- Stock reservation for orders
-- Stock release on cancellation
-- Low stock alerts
-- Stock movement history
-- Multi-warehouse support (future)
+- **Python**: 3.11+
+- **Framework**: FastAPI 0.115+ with standard dependencies
+- **Database**: PostgreSQL 15 with async support
+- **ORM**: SQLAlchemy 2.0 (async)
+- **Server**: Uvicorn (ASGI server)
+- **Validation**: Pydantic v2
 
-## Database Schema
-
-**inventory**: id, book_id, available_quantity, reserved_quantity, reorder_level, last_restocked_at, updated_at
-**stock_movements**: id, book_id, movement_type, quantity, reference_type, reference_id, notes, created_at
-**reservations**: id, book_id, order_id, quantity, status, expires_at, created_at
-
-## REST API Endpoints
+## 📁 Project Structure
 
 ```
-GET    /api/v1/inventory/:bookId        # Get stock level
-POST   /api/v1/inventory/:bookId/adjust # Adjust stock (admin)
-GET    /api/v1/inventory/low-stock      # Get low stock items
+inventory-service/
+├── app/
+│   ├── api/v1/endpoints/       # API endpoints (TODO)
+│   ├── core/
+│   │   └── config.py          # ✅ Settings configured
+│   ├── db/                     # Database setup (TODO)
+│   ├── models/                 # SQLAlchemy models (TODO)
+│   ├── schemas/                # Pydantic schemas (TODO)
+│   ├── services/               # Business logic (TODO)
+│   ├── grpc/                   # gRPC (future)
+│   └── main.py                 # ✅ FastAPI app
+├── alembic/                    # Migrations (TODO)
+├── tests/                      # Tests (TODO)
+├── requirements.txt            # ✅ Dependencies
+├── Dockerfile                  # ✅ Container definition
+├── docker-compose.yml          # ✅ Local development
+├── .env.example                # ✅ Environment template
+├── QUICKSTART.md               # ✅ Implementation guide
+└── README.md                   # This file
 ```
 
-## gRPC Methods
+## 🚀 Getting Started
 
+### Option 1: Python venv (Recommended for Development)
+
+```bash
+# Create virtual environment
+python3.11 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Copy environment file
+cp .env.example .env
+
+# Start PostgreSQL
+docker-compose up postgres -d
+
+# Run the service
+uvicorn app.main:app --reload --port 8086
+```
+
+### Option 2: Docker Compose (Full Stack)
+
+```bash
+# Start everything
+docker-compose up
+
+# View logs
+docker-compose logs -f
+
+# Stop
+docker-compose down
+```
+
+## 📡 Planned API Endpoints
+
+### Inventory Management
+
+```http
+GET    /api/v1/inventory/{book_id}              # Get stock level
+POST   /api/v1/inventory/{book_id}/adjust       # Adjust stock (admin)
+GET    /api/v1/inventory/low-stock              # Get low stock items
+```
+
+### Reservations (for Orders)
+
+```http
+POST   /api/v1/inventory/reserve                # Reserve stock for order
+POST   /api/v1/inventory/release/{order_id}     # Release reservation
+POST   /api/v1/inventory/commit/{order_id}      # Commit reservation (after payment)
+```
+
+### Stock Movements
+
+```http
+GET    /api/v1/inventory/{book_id}/movements    # Get movement history
+```
+
+## 🗄️ Planned Database Schema
+
+### inventory table
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| book_id | UUID | Book identifier (unique) |
+| available_quantity | INTEGER | Available stock |
+| reserved_quantity | INTEGER | Reserved for orders |
+| reorder_level | INTEGER | Low stock threshold |
+| last_restocked_at | TIMESTAMP | Last restock time |
+| updated_at | TIMESTAMP | Last update time |
+
+### reservations table
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| book_id | UUID | Book identifier |
+| order_id | UUID | Order identifier |
+| quantity | INTEGER | Reserved quantity |
+| status | VARCHAR | pending/committed/released |
+| expires_at | TIMESTAMP | Auto-release time |
+| created_at | TIMESTAMP | Creation time |
+
+### stock_movements table
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| book_id | UUID | Book identifier |
+| movement_type | VARCHAR | restock/sale/adjustment/reservation |
+| quantity | INTEGER | Quantity changed |
+| reference_type | VARCHAR | order/purchase/adjustment |
+| reference_id | UUID | Related record ID |
+| notes | TEXT | Additional info |
+| created_at | TIMESTAMP | Movement time |
+
+## ⚙️ Configuration
+
+Environment variables:
+
+```bash
+PORT=8086
+DATABASE_URL=postgresql+asyncpg://bookstore:dev_password@localhost:5432/inventory_db
+LOG_LEVEL=INFO
+LOW_STOCK_THRESHOLD=10              # Alert when stock below this
+RESERVATION_EXPIRY_MINUTES=15       # Auto-release reservations after
+```
+
+## 🔄 Reservation Flow
+
+1. **Reserve** - When order is created:
+   - Check if stock available
+   - Create reservation with expiry time
+   - Decrease available_quantity
+   - Increase reserved_quantity
+
+2. **Commit** - When payment succeeds:
+   - Mark reservation as committed
+   - Decrease reserved_quantity
+   - Stock movement recorded
+
+3. **Release** - When order is cancelled OR reservation expires:
+   - Delete/mark reservation as released
+   - Increase available_quantity
+   - Decrease reserved_quantity
+
+## 📊 Implementation Status
+
+| Component | Status |
+|-----------|--------|
+| Project Structure | ✅ Complete |
+| requirements.txt | ✅ Complete |
+| Configuration | ✅ Complete |
+| Main App | ✅ Basic |
+| Database Models | 🔜 TODO |
+| Database Setup | 🔜 TODO |
+| Business Logic | 🔜 TODO |
+| API Endpoints | 🔜 TODO |
+| Tests | 🔜 TODO |
+| Migrations | 🔜 TODO |
+| Docker | ✅ Complete |
+
+## 📚 Next Steps
+
+See `QUICKSTART.md` for detailed implementation guide.
+
+The service follows the same patterns as the Review Service, so you can reference that for:
+- Database setup (`app/db/base.py`)
+- Model patterns (`app/models/`)
+- Service patterns (`app/services/`)
+- Endpoint patterns (`app/api/v1/endpoints/`)
+
+## 🔗 Integration with Other Services
+
+### Events to Publish (RabbitMQ)
+- `inventory.updated` - Stock level changed
+- `inventory.low_stock` - Stock below threshold
+- `inventory.reserved` - Stock reserved for order
+- `inventory.reservation_failed` - Insufficient stock
+
+### Events to Consume
+- `order.created` - Reserve stock
+- `order.cancelled` - Release reservation
+- `payment.completed` - Commit reservation
+- `catalog.book_created` - Initialize inventory
+
+### gRPC Methods (Future)
 ```protobuf
 rpc CheckStock(CheckStockRequest) returns (CheckStockResponse);
 rpc ReserveStock(ReserveStockRequest) returns (ReservationResult);
@@ -45,25 +226,6 @@ rpc ReleaseReservation(ReleaseReservationRequest) returns (ReleaseResponse);
 rpc CommitReservation(CommitReservationRequest) returns (CommitResponse);
 ```
 
-## Events Published
+## 📄 License
 
-- `inventory.updated`
-- `inventory.low_stock`
-- `inventory.reserved`
-- `inventory.reservation_failed`
-
-## Events Consumed
-
-- `order.created` - Reserve stock
-- `order.cancelled` - Release reservation
-- `payment.completed` - Commit reservation
-- `catalog.book_created` - Initialize inventory
-
-## Next Steps
-
-- [ ] Implement inventory models
-- [ ] Create reservation logic
-- [ ] Add stock movement tracking
-- [ ] Implement low stock alerts
-- [ ] Add event consumers
-- [ ] Write tests
+Apache License 2.0

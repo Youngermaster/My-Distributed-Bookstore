@@ -8,24 +8,27 @@ services:
     container_name: review-service
     ports:
       - "8088:8088"
-      - "50058:50058"
     environment:
+      APP_NAME: Review Service
+      DEBUG: "True"
+      HOST: 0.0.0.0
       PORT: 8088
-      GRPC_PORT: 50058
-      DATABASE_URL: postgresql://bookstore:dev_password@postgres:5432/reviews_db
-      RABBITMQ_URL: amqp://bookstore:dev_password@rabbitmq:5672/
+      DATABASE_URL: postgresql+asyncpg://bookstore:dev_password@postgres:5432/reviews_db
       LOG_LEVEL: INFO
     depends_on:
       postgres:
         condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
     networks:
       - bookstore-review-network
     restart: unless-stopped
+    volumes:
+      # Mount source code for development (hot reload)
+      - ./app:/app/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8088 --reload
 
   postgres:
     image: postgres:15-alpine
+    container_name: review-service-postgres
     environment:
       POSTGRES_USER: bookstore
       POSTGRES_PASSWORD: dev_password
@@ -41,26 +44,12 @@ services:
       retries: 5
     networks:
       - bookstore-review-network
-
-  rabbitmq:
-    image: rabbitmq:3.12-management-alpine
-    environment:
-      RABBITMQ_DEFAULT_USER: bookstore
-      RABBITMQ_DEFAULT_PASS: dev_password
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    networks:
-      - bookstore-review-network
+    restart: unless-stopped
 
 volumes:
   postgres_data:
 
 networks:
   bookstore-review-network:
+    name: bookstore-review-network
     driver: bridge

@@ -1,4 +1,4 @@
-# FastAPI with all standard dependencies (includes uvicorn with performance extras)
+# FastAPI with all standard dependencies
 fastapi[standard]==0.115.0
 
 # Database
@@ -6,22 +6,17 @@ sqlalchemy==2.0.35
 asyncpg==0.29.0
 alembic==1.13.3
 
-# Pydantic for validation and settings
+# Pydantic
 pydantic==2.9.2
 pydantic-settings==2.6.0
 
-# Environment variables
+# Environment
 python-dotenv==1.0.1
 
-# Machine Learning for sentiment analysis
-nltk==3.9.1
-textblob==0.18.0.post0
-scikit-learn==1.5.2
-
-# Date and time utilities
+# Date utilities
 python-dateutil==2.9.0
 
-# UUID support
+# UUID
 uuid==1.30
 
 # Testing
@@ -35,7 +30,7 @@ black==24.10.0
 ruff==0.7.3
 mypy==1.13.0
 
-# Optional: gRPC support (for future inter-service communication)
+# Optional: gRPC
 grpcio==1.68.0
 grpcio-tools==1.68.0
 protobuf==5.28.3
@@ -43,5 +38,5 @@ protobuf==5.28.3
 # Optional: Message queue
 pika==1.3.2
 
-# JSON logging
+# Logging
 python-json-logger==2.0.7
