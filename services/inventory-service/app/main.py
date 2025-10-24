@@ -11,6 +11,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.db.base import init_db, close_db
+from app.api.v1.endpoints import inventory
+from app.tasks.reservation_expiry import start_background_tasks
 
 logging.basicConfig(
     level=getattr(logging, settings.LOG_LEVEL),
@@ -21,11 +24,27 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events."""
+    # Startup
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
-    # TODO: Initialize database
-    # TODO: Setup background tasks for reservation expiry
+
+    # Initialize database tables (development only - use Alembic in production)
+    if settings.DEBUG:
+        logger.info("Initializing database tables (DEBUG mode)...")
+        await init_db()
+
+    # Start background tasks
+    logger.info("Starting background tasks...")
+    start_background_tasks()
+
+    logger.info(f"{settings.APP_NAME} started successfully on {settings.HOST}:{settings.PORT}")
+
     yield
+
+    # Shutdown
     logger.info("Shutting down...")
+    await close_db()
+    logger.info("Shutdown complete")
 
 
 app = FastAPI(
@@ -69,12 +88,17 @@ async def root():
     return {
         "service": settings.APP_NAME,
         "version": settings.APP_VERSION,
-        "docs": "/docs"
+        "docs": "/docs",
+        "endpoints": {
+            "health": "/health",
+            "api_docs": "/docs",
+            "inventory": "/api/v1/inventory"
+        }
     }
 
 
-# TODO: Include inventory router
-# app.include_router(inventory.router, prefix="/api/v1")
+# Include API routers
+app.include_router(inventory.router, prefix="/api/v1")
 
 
 if __name__ == "__main__":
