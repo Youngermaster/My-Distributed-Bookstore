@@ -54,14 +54,14 @@ export default function Home() {
   const isLoading = searchQuery ? searchLoading : booksLoading;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <div className="bg-black text-white py-16">
+      <div className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground py-16">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 text-center">
             Welcome to Ohara Bookstore
           </h1>
-          <p className="text-xl mb-8 text-center text-blue-100">
+          <p className="text-xl mb-8 text-center opacity-90">
             Discover your next favorite book
           </p>
           <div className="flex justify-center">
@@ -77,7 +77,7 @@ export default function Home() {
         {/* Search Results or Featured Books */}
         <section className="mb-16">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold text-gray-900">
+            <h2 className="text-3xl font-bold text-foreground">
               {searchQuery ? "Search Results" : "Featured Books"}
             </h2>
             {!searchQuery && (
@@ -100,7 +100,7 @@ export default function Home() {
         {!searchQuery && (
           <section>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-bold text-gray-900">
+              <h2 className="text-3xl font-bold text-foreground">
                 Browse by Genre
               </h2>
               <Button
@@ -112,7 +112,7 @@ export default function Home() {
             </div>
             {categoriesLoading ? (
               <div className="text-center py-10">
-                <p className="text-gray-500">Loading categories...</p>
+                <p className="text-muted-foreground">Loading categories...</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

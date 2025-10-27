@@ -41,7 +41,7 @@ export default function ManageBooks() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Login Required</CardTitle>
@@ -61,7 +61,7 @@ export default function ManageBooks() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
@@ -81,8 +81,8 @@ export default function ManageBooks() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-600">Loading books...</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading books...</p>
       </div>
     );
   }
@@ -90,14 +90,14 @@ export default function ManageBooks() {
   const books = booksData?.books || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            <h1 className="text-4xl font-bold text-foreground mb-2">
               Manage Books
             </h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               {books.length} {books.length === 1 ? "book" : "books"} total
             </p>
           </div>
@@ -139,15 +139,15 @@ export default function ManageBooks() {
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900">
+                    <h3 className="text-lg font-semibold text-foreground">
                       {book.title}
                     </h3>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                       ISBN: {book.isbn} | Price: ${book.price.toFixed(2)} |
                       Stock: {book.stock_quantity}
                     </p>
                     {book.description && (
-                      <p className="text-sm text-gray-500 mt-2 line-clamp-2">
+                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                         {book.description}
                       </p>
                     )}
