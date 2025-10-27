@@ -1,4 +1,4 @@
-import { Book } from "@/types/book";
+import { type Book } from "@/types/book";
 import BookCard from "./BookCard";
 import { Loader2 } from "lucide-react";
 

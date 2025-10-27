@@ -93,8 +93,8 @@ go run cmd/server/main.go
 **Terminal 4 - Frontend:**
 ```bash
 cd frontend/customer-app
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 ## Manual API Testing
@@ -234,10 +234,10 @@ All components created in `frontend/customer-app/src/components/`:
 cd frontend/customer-app
 
 # Install dependencies (if not already done)
-npm install
+pnpm install
 
 # Start the development server
-npm run dev
+pnpm run dev
 
 # Frontend will be available at http://localhost:5173
 ```
@@ -271,7 +271,7 @@ npm run dev
    ```bash
    # Terminal 2 - Start React app
    cd frontend/customer-app
-   npm run dev
+   pnpm run dev
    ```
 
 3. **Test the flow:**
@@ -452,7 +452,7 @@ ENV=development
 
 4. **Run and Test:**
    ```bash
-   npm run dev
+   pnpm run dev
    # Open http://localhost:5173
    ```
 

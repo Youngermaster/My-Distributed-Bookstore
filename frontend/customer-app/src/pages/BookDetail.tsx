@@ -1,42 +1,52 @@
-import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { booksAPI, wishlistAPI } from '@/lib/api';
-import { useAuthStore } from '@/store/authStore';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Heart } from 'lucide-react';
+import { useState } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { booksAPI, wishlistAPI } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Heart } from "lucide-react";
 
 export default function BookDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuthStore();
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const { data: bookData, isLoading } = useQuery({
-    queryKey: ['book', id],
-    queryFn: () => booksAPI.get(id!).then(res => res.data),
+    queryKey: ["book", id],
+    queryFn: () => booksAPI.get(id!).then((res) => res.data),
     enabled: !!id,
   });
 
   const addToWishlistMutation = useMutation({
     mutationFn: (bookId: string) => wishlistAPI.add(bookId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['wishlist'] });
-      setMessage({ type: 'success', text: 'Added to wishlist!' });
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+      setMessage({ type: "success", text: "Added to wishlist!" });
       setTimeout(() => setMessage(null), 3000);
     },
     onError: (error: any) => {
-      const errorMsg = error.response?.data?.message || 'Failed to add to wishlist';
-      setMessage({ type: 'error', text: errorMsg });
+      const errorMsg =
+        error.response?.data?.message || "Failed to add to wishlist";
+      setMessage({ type: "error", text: errorMsg });
       setTimeout(() => setMessage(null), 3000);
     },
   });
 
   const handleAddToWishlist = () => {
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
     if (id) {
@@ -58,7 +68,9 @@ export default function BookDetail() {
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Book Not Found</CardTitle>
-            <CardDescription>The requested book could not be found.</CardDescription>
+            <CardDescription>
+              The requested book could not be found.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Link to="/">
@@ -82,9 +94,9 @@ export default function BookDetail() {
         {message && (
           <div
             className={`mb-6 p-4 rounded-md ${
-              message.type === 'success'
-                ? 'bg-green-50 text-green-800 border border-green-200'
-                : 'bg-red-50 text-red-800 border border-red-200'
+              message.type === "success"
+                ? "bg-green-50 text-green-800 border border-green-200"
+                : "bg-red-50 text-red-800 border border-red-200"
             }`}
           >
             {message.text}
@@ -114,10 +126,12 @@ export default function BookDetail() {
           {/* Book Details */}
           <div className="md:col-span-2 space-y-6">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">{book.title}</h1>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                {book.title}
+              </h1>
               {book.authors && book.authors.length > 0 && (
                 <p className="text-xl text-gray-600 mb-4">
-                  by {book.authors.map(a => a.name).join(', ')}
+                  by {book.authors.map((a) => a.name).join(", ")}
                 </p>
               )}
               {book.categories && book.categories.length > 0 && (
@@ -146,7 +160,9 @@ export default function BookDetail() {
                         In Stock ({book.stock_quantity} available)
                       </span>
                     ) : (
-                      <span className="text-red-600 font-medium">Out of Stock</span>
+                      <span className="text-red-600 font-medium">
+                        Out of Stock
+                      </span>
                     )}
                   </span>
                 </div>
@@ -158,7 +174,9 @@ export default function BookDetail() {
                     disabled={addToWishlistMutation.isPending}
                   >
                     <Heart className="mr-2 h-4 w-4" />
-                    {addToWishlistMutation.isPending ? 'Adding...' : 'Add to Wishlist'}
+                    {addToWishlistMutation.isPending
+                      ? "Adding..."
+                      : "Add to Wishlist"}
                   </Button>
                 </div>
               </CardContent>
@@ -170,7 +188,9 @@ export default function BookDetail() {
                   <CardTitle>Description</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-700 leading-relaxed">{book.description}</p>
+                  <p className="text-gray-700 leading-relaxed">
+                    {book.description}
+                  </p>
                 </CardContent>
               </Card>
             )}
@@ -208,7 +228,9 @@ export default function BookDetail() {
                   {book.language && (
                     <div>
                       <p className="text-sm text-gray-500">Language</p>
-                      <p className="font-medium">{book.language.toUpperCase()}</p>
+                      <p className="font-medium">
+                        {book.language.toUpperCase()}
+                      </p>
                     </div>
                   )}
                   {book.format && (

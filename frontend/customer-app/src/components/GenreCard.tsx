@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Category } from "@/types/book";
+import { type Category } from "@/types/book";
 import { ChevronRight } from "lucide-react";
 
 interface GenreCardProps {

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Book } from "@/types/book";
+import { type Book } from "@/types/book";
 import { ShoppingCart, Heart } from "lucide-react";
 
 interface BookCardProps {
@@ -23,7 +23,8 @@ export default function BookCard({
     }).format(price);
   };
 
-  const authorsText = book.authors?.map((a) => a.name).join(", ") || "Unknown Author";
+  const authorsText =
+    book.authors?.map((a) => a.name).join(", ") || "Unknown Author";
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
@@ -42,7 +43,9 @@ export default function BookCard({
           )}
           {book.stock_quantity === 0 && (
             <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-              <span className="text-white font-semibold text-lg">Out of Stock</span>
+              <span className="text-white font-semibold text-lg">
+                Out of Stock
+              </span>
             </div>
           )}
         </div>
@@ -50,7 +53,9 @@ export default function BookCard({
           <h3 className="font-semibold text-lg line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors">
             {book.title}
           </h3>
-          <p className="text-sm text-gray-600 mb-2 line-clamp-1">{authorsText}</p>
+          <p className="text-sm text-gray-600 mb-2 line-clamp-1">
+            {authorsText}
+          </p>
           <div className="flex items-center gap-2">
             <span className="text-lg font-bold text-gray-900">
               {formatPrice(book.price)}
