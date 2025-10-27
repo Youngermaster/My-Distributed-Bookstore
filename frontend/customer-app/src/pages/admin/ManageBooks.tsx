@@ -1,14 +1,20 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { booksAPI } from '@/lib/api';
-import { useAuthStore } from '@/store/authStore';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Pencil, Trash2, Plus } from 'lucide-react';
-import type { Book } from '@/types/book';
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import { booksAPI } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Pencil, Trash2, Plus } from "lucide-react";
+import type { Book } from "@/types/book";
 
 export default function ManageBooks() {
   const queryClient = useQueryClient();
@@ -17,18 +23,19 @@ export default function ManageBooks() {
   const [editingBook, setEditingBook] = useState<Book | null>(null);
 
   // Check if user is admin
-  const isAdmin = user?.role?.name === 'admin';
+  const isAdmin = user?.role?.name === "admin";
 
   const { data: booksData, isLoading } = useQuery({
-    queryKey: ['books'],
-    queryFn: () => booksAPI.list({ limit: 100, offset: 0 }).then(res => res.data),
+    queryKey: ["books"],
+    queryFn: () =>
+      booksAPI.list({ limit: 100, offset: 0 }).then((res) => res.data),
     enabled: isAuthenticated && isAdmin,
   });
 
   const deleteBookMutation = useMutation({
     mutationFn: (bookId: string) => booksAPI.delete(bookId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['books'] });
+      queryClient.invalidateQueries({ queryKey: ["books"] });
     },
   });
 
@@ -38,7 +45,9 @@ export default function ManageBooks() {
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Login Required</CardTitle>
-            <CardDescription>You need to be logged in as an admin</CardDescription>
+            <CardDescription>
+              You need to be logged in as an admin
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Link to="/login">
@@ -56,7 +65,9 @@ export default function ManageBooks() {
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
-            <CardDescription>You don't have permission to access this page</CardDescription>
+            <CardDescription>
+              You don't have permission to access this page
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Link to="/">
@@ -83,9 +94,11 @@ export default function ManageBooks() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Manage Books</h1>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              Manage Books
+            </h1>
             <p className="text-gray-600">
-              {books.length} {books.length === 1 ? 'book' : 'books'} total
+              {books.length} {books.length === 1 ? "book" : "books"} total
             </p>
           </div>
           <div className="flex gap-2">
@@ -104,7 +117,7 @@ export default function ManageBooks() {
             onClose={() => setShowCreateForm(false)}
             onSuccess={() => {
               setShowCreateForm(false);
-              queryClient.invalidateQueries({ queryKey: ['books'] });
+              queryClient.invalidateQueries({ queryKey: ["books"] });
             }}
           />
         )}
@@ -115,7 +128,7 @@ export default function ManageBooks() {
             onClose={() => setEditingBook(null)}
             onSuccess={() => {
               setEditingBook(null);
-              queryClient.invalidateQueries({ queryKey: ['books'] });
+              queryClient.invalidateQueries({ queryKey: ["books"] });
             }}
           />
         )}
@@ -126,12 +139,17 @@ export default function ManageBooks() {
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900">{book.title}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {book.title}
+                    </h3>
                     <p className="text-sm text-gray-600 mt-1">
-                      ISBN: {book.isbn} | Price: ${book.price.toFixed(2)} | Stock: {book.stock_quantity}
+                      ISBN: {book.isbn} | Price: ${book.price.toFixed(2)} |
+                      Stock: {book.stock_quantity}
                     </p>
                     {book.description && (
-                      <p className="text-sm text-gray-500 mt-2 line-clamp-2">{book.description}</p>
+                      <p className="text-sm text-gray-500 mt-2 line-clamp-2">
+                        {book.description}
+                      </p>
                     )}
                   </div>
                   <div className="flex gap-2 ml-4">
@@ -146,7 +164,9 @@ export default function ManageBooks() {
                       variant="outline"
                       size="icon"
                       onClick={() => {
-                        if (confirm('Are you sure you want to delete this book?')) {
+                        if (
+                          confirm("Are you sure you want to delete this book?")
+                        ) {
                           deleteBookMutation.mutate(book.id);
                         }
                       }}
@@ -173,14 +193,14 @@ interface BookFormProps {
 
 function BookForm({ book, onClose, onSuccess }: BookFormProps) {
   const [formData, setFormData] = useState({
-    isbn: book?.isbn || '',
-    title: book?.title || '',
-    description: book?.description || '',
-    price: book?.price?.toString() || '',
-    stock_quantity: book?.stock_quantity?.toString() || '',
-    language: book?.language || 'en',
-    pages: book?.pages?.toString() || '',
-    format: book?.format || 'paperback',
+    isbn: book?.isbn || "",
+    title: book?.title || "",
+    description: book?.description || "",
+    price: book?.price?.toString() || "",
+    stock_quantity: book?.stock_quantity?.toString() || "",
+    language: book?.language || "en",
+    pages: book?.pages?.toString() || "",
+    format: book?.format || "paperback",
   });
 
   const createBookMutation = useMutation({
@@ -210,14 +230,17 @@ function BookForm({ book, onClose, onSuccess }: BookFormProps) {
     }
   };
 
-  const isLoading = createBookMutation.isPending || updateBookMutation.isPending;
+  const isLoading =
+    createBookMutation.isPending || updateBookMutation.isPending;
 
   return (
     <Card className="mb-6">
       <CardHeader>
-        <CardTitle>{book ? 'Edit Book' : 'Add New Book'}</CardTitle>
+        <CardTitle>{book ? "Edit Book" : "Add New Book"}</CardTitle>
         <CardDescription>
-          {book ? 'Update book information' : 'Fill in the details for the new book'}
+          {book
+            ? "Update book information"
+            : "Fill in the details for the new book"}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -228,7 +251,9 @@ function BookForm({ book, onClose, onSuccess }: BookFormProps) {
               <Input
                 id="isbn"
                 value={formData.isbn}
-                onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, isbn: e.target.value })
+                }
                 required
                 disabled={isLoading}
               />
@@ -238,7 +263,9 @@ function BookForm({ book, onClose, onSuccess }: BookFormProps) {
               <Input
                 id="title"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
                 required
                 disabled={isLoading}
               />
@@ -251,7 +278,9 @@ function BookForm({ book, onClose, onSuccess }: BookFormProps) {
               id="description"
               className="w-full min-h-[100px] rounded-md border border-input bg-transparent px-3 py-2 text-sm"
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               disabled={isLoading}
             />
           </div>
@@ -264,7 +293,9 @@ function BookForm({ book, onClose, onSuccess }: BookFormProps) {
                 type="number"
                 step="0.01"
                 value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, price: e.target.value })
+                }
                 required
                 disabled={isLoading}
               />
@@ -275,7 +306,9 @@ function BookForm({ book, onClose, onSuccess }: BookFormProps) {
                 id="stock_quantity"
                 type="number"
                 value={formData.stock_quantity}
-                onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, stock_quantity: e.target.value })
+                }
                 required
                 disabled={isLoading}
               />
@@ -286,7 +319,9 @@ function BookForm({ book, onClose, onSuccess }: BookFormProps) {
                 id="pages"
                 type="number"
                 value={formData.pages}
-                onChange={(e) => setFormData({ ...formData, pages: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, pages: e.target.value })
+                }
                 disabled={isLoading}
               />
             </div>
@@ -298,7 +333,9 @@ function BookForm({ book, onClose, onSuccess }: BookFormProps) {
               <Input
                 id="language"
                 value={formData.language}
-                onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, language: e.target.value })
+                }
                 disabled={isLoading}
               />
             </div>
@@ -308,7 +345,9 @@ function BookForm({ book, onClose, onSuccess }: BookFormProps) {
                 id="format"
                 className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm"
                 value={formData.format}
-                onChange={(e) => setFormData({ ...formData, format: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, format: e.target.value })
+                }
                 disabled={isLoading}
               >
                 <option value="paperback">Paperback</option>
@@ -319,11 +358,16 @@ function BookForm({ book, onClose, onSuccess }: BookFormProps) {
           </div>
 
           <div className="flex gap-2 justify-end">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Saving...' : book ? 'Update Book' : 'Create Book'}
+              {isLoading ? "Saving..." : book ? "Update Book" : "Create Book"}
             </Button>
           </div>
         </form>

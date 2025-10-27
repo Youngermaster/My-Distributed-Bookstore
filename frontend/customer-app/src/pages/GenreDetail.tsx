@@ -4,7 +4,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import BookGrid from "@/components/BookGrid";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, Loader2 } from "lucide-react";
-import { Book } from "@/types/book";
+import { type Book } from "@/types/book";
 
 export default function GenreDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -60,9 +60,7 @@ export default function GenreDetail() {
           <p className="text-gray-500 mb-6">
             The genre "{slug}" doesn't exist or has been removed
           </p>
-          <Button onClick={() => navigate("/genres")}>
-            Browse All Genres
-          </Button>
+          <Button onClick={() => navigate("/genres")}>Browse All Genres</Button>
         </div>
       </div>
     );
@@ -101,8 +99,8 @@ export default function GenreDetail() {
           <h1 className="text-4xl font-bold mb-2">{category.name}</h1>
           {booksData && (
             <p className="text-lg text-blue-100">
-              {booksData.books.length} {booksData.books.length === 1 ? "book" : "books"} in this
-              genre
+              {booksData.books.length}{" "}
+              {booksData.books.length === 1 ? "book" : "books"} in this genre
             </p>
           )}
         </div>

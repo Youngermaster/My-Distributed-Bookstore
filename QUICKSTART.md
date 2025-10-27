@@ -1,7 +1,8 @@
 # Quick Start Guide - Full Stack Bookstore
 
 This guide will help you quickly start and test the complete bookstore application stack:
-- **Frontend**: React + TypeScript + ShadcnUI (Port 5173)
+
+- **Frontend**: React 19 + TypeScript + TanStack Router + TanStack Query + ShadcnUI (Port 5173)
 - **API Gateway**: Go Fiber (Port 8080)
 - **Catalog Service**: Go Fiber + PostgreSQL (Port 8081)
 - **Database**: PostgreSQL (Port 5432)
@@ -31,6 +32,7 @@ docker compose logs -f
 ```
 
 You should see:
+
 ```
 ✅ catalog-service started
 ✅ API Gateway started
@@ -55,6 +57,7 @@ Frontend will be available at: **http://localhost:5173**
 ## Option 2: Manual Start (All Services)
 
 ### Terminal 1 - PostgreSQL
+
 ```bash
 docker run --name bookstore-postgres \
   -e POSTGRES_USER=bookstore \
@@ -65,6 +68,7 @@ docker run --name bookstore-postgres \
 ```
 
 ### Terminal 2 - Catalog Service
+
 ```bash
 cd services/catalog-service
 
@@ -76,6 +80,7 @@ go run cmd/server/main.go
 ```
 
 ### Terminal 3 - API Gateway
+
 ```bash
 cd services/api-gateway
 
@@ -87,6 +92,7 @@ go run cmd/server/main.go
 ```
 
 ### Terminal 4 - Frontend
+
 ```bash
 cd frontend/customer-app
 
@@ -119,27 +125,32 @@ curl "http://localhost:8080/api/v1/catalog/books/search?q=distributed" | jq
 Open your browser and navigate to: **http://localhost:5173**
 
 #### Home Page (`/`)
+
 - ✅ See hero section with search bar
 - ✅ See "Featured Books" section with 3 books
 - ✅ See "Browse by Genre" section with 5 categories
 
 #### Test Search
+
 - Type "distributed" in the search bar
 - Should show search results with the "Distributed Systems" book
 - Search is debounced (waits 300ms after you stop typing)
 
 #### Test Genre Navigation
+
 - Click on any genre card (e.g., "Programming")
 - Should navigate to `/genres/programming`
 - Should show all books in that category
 - Breadcrumb shows: Home > Genres > Programming
 
 #### Test Book Details
+
 - Click on any book card
 - Should navigate to `/books/{id}`
 - Should show book details, author info, etc.
 
 #### Test Author Page
+
 - From a book detail page, click on an author name
 - Should navigate to `/authors/{id}`
 - Should show author biography and their books
@@ -149,11 +160,13 @@ Open your browser and navigate to: **http://localhost:5173**
 After starting the services, the database is automatically seeded with:
 
 ### Books (3 total)
+
 1. **Building Microservices** by Martin Fowler - $49.99
 2. **Clean Code** by Robert C. Martin - $44.99
 3. **Distributed Systems** by Andrew S. Tanenbaum & Maarten van Steen - $89.99
 
 ### Categories (5 total)
+
 - Programming 💻
 - Distributed Systems 🌐
 - Software Architecture 🏗️
@@ -161,6 +174,7 @@ After starting the services, the database is automatically seeded with:
 - Cloud Computing ☁️
 
 ### Authors (5 total)
+
 - Martin Fowler
 - Robert C. Martin
 - Eric Evans
@@ -168,6 +182,7 @@ After starting the services, the database is automatically seeded with:
 - Maarten van Steen
 
 ### Publishers (3 total)
+
 - O'Reilly Media
 - Manning Publications
 - Addison-Wesley
@@ -188,23 +203,37 @@ PostgreSQL (localhost:5432)
 
 ## Component Structure
 
+### Frontend Architecture
+
+- **Router**: TanStack Router with file-based routing
+- **Data Fetching**: TanStack Query for server state management
+- **State Management**: Zustand for client state
+- **UI Components**: ShadcnUI + Tailwind CSS
+
 ### Frontend Components Created
+
 - **BookCard** - Displays individual books with cover, title, price, and actions
 - **GenreCard** - Displays category/genre with icon and navigation
 - **SearchBar** - Debounced search input
 - **BookGrid** - Responsive grid layout for books with loading/empty states
 
-### Frontend Pages Created
-- **Home** (`/`) - Hero section, featured books, and genre grid
-- **Genres** (`/genres`) - All categories in a grid
-- **GenreDetail** (`/genres/:slug`) - Books in specific genre
-- **AuthorDetail** (`/authors/:id`) - Author info and their books
-- **BookList** (`/books`) - All books (existing)
-- **BookDetail** (`/books/:id`) - Book details (existing)
+### Frontend Routes (File-Based with TanStack Router)
+
+- `/` - Home page (Hero section, featured books, genre grid)
+- `/books` - All books list
+- `/books/:id` - Book details
+- `/genres` - All categories in a grid
+- `/genres/:slug` - Books in specific genre
+- `/authors/:id` - Author info and their books
+- `/login` - Login page
+- `/register` - Registration page
+- `/wishlist` - User wishlist (protected route)
+- `/admin/books` - Admin book management (protected route)
 
 ## Stopping the Services
 
 ### Docker Compose
+
 ```bash
 cd services/api-gateway
 docker compose down
@@ -214,12 +243,14 @@ docker compose down -v
 ```
 
 ### Manual Services
+
 - Press `Ctrl+C` in each terminal running a service
 - Stop PostgreSQL: `docker stop bookstore-postgres`
 
 ## Troubleshooting
 
 ### Backend not responding
+
 ```bash
 # Check if services are running
 docker compose ps
@@ -233,6 +264,7 @@ docker compose restart
 ```
 
 ### Frontend can't connect to API
+
 ```bash
 # Verify API Gateway is running
 curl http://localhost:8080/health
@@ -243,6 +275,7 @@ cat frontend/customer-app/.env
 ```
 
 ### Database connection errors
+
 ```bash
 # Reset database
 docker compose down -v
@@ -252,6 +285,7 @@ docker compose up -d
 ```
 
 ### Port already in use
+
 ```bash
 # Check what's using the port
 lsof -i :5173  # Frontend

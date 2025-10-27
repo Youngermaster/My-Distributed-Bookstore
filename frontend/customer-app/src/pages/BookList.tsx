@@ -1,55 +1,66 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { booksAPI, categoriesAPI } from '@/lib/api';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import type { BookFilters } from '@/types/book';
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import { booksAPI, categoriesAPI } from "@/lib/api";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import type { BookFilters } from "@/types/book";
 
 export default function BookList() {
   const [filters, setFilters] = useState<BookFilters>({
     limit: 20,
     offset: 0,
   });
-  const [searchTitle, setSearchTitle] = useState('');
+  const [searchTitle, setSearchTitle] = useState("");
 
   const { data: booksData, isLoading: booksLoading } = useQuery({
-    queryKey: ['books', filters],
-    queryFn: () => booksAPI.list(filters).then(res => res.data),
+    queryKey: ["books", filters],
+    queryFn: () => booksAPI.list(filters).then((res) => res.data),
   });
 
   const { data: categoriesData } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => categoriesAPI.list().then(res => res.data),
+    queryKey: ["categories"],
+    queryFn: () => categoriesAPI.list().then((res) => res.data),
   });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setFilters(prev => ({ ...prev, title: searchTitle, offset: 0 }));
+    setFilters((prev) => ({ ...prev, title: searchTitle, offset: 0 }));
   };
 
   const handleCategoryFilter = (categoryId: string) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       category_id: prev.category_id === categoryId ? undefined : categoryId,
-      offset: 0
+      offset: 0,
     }));
   };
 
   const handleNextPage = () => {
-    setFilters(prev => ({ ...prev, offset: (prev.offset || 0) + (prev.limit || 20) }));
-  };
-
-  const handlePrevPage = () => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      offset: Math.max(0, (prev.offset || 0) - (prev.limit || 20))
+      offset: (prev.offset || 0) + (prev.limit || 20),
     }));
   };
 
-  const currentPage = Math.floor((filters.offset || 0) / (filters.limit || 20)) + 1;
+  const handlePrevPage = () => {
+    setFilters((prev) => ({
+      ...prev,
+      offset: Math.max(0, (prev.offset || 0) - (prev.limit || 20)),
+    }));
+  };
+
+  const currentPage =
+    Math.floor((filters.offset || 0) / (filters.limit || 20)) + 1;
   const totalPages = Math.ceil((booksData?.total || 0) / (filters.limit || 20));
 
   return (
@@ -81,7 +92,9 @@ export default function BookList() {
               {categoriesData.data.map((category) => (
                 <Button
                   key={category.id}
-                  variant={filters.category_id === category.id ? 'default' : 'outline'}
+                  variant={
+                    filters.category_id === category.id ? "default" : "outline"
+                  }
                   size="sm"
                   onClick={() => handleCategoryFilter(category.id)}
                 >
@@ -118,14 +131,19 @@ export default function BookList() {
                     )}
                     <CardTitle className="line-clamp-2">{book.title}</CardTitle>
                     <CardDescription className="line-clamp-1">
-                      {book.authors?.map(a => a.name).join(', ') || 'Unknown Author'}
+                      {book.authors?.map((a) => a.name).join(", ") ||
+                        "Unknown Author"}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex-1">
-                    <p className="text-2xl font-bold text-green-600">${book.price.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      ${book.price.toFixed(2)}
+                    </p>
                     <p className="text-sm text-gray-500 mt-1">
                       {book.stock_quantity > 0 ? (
-                        <span className="text-green-600">In Stock ({book.stock_quantity})</span>
+                        <span className="text-green-600">
+                          In Stock ({book.stock_quantity})
+                        </span>
                       ) : (
                         <span className="text-red-600">Out of Stock</span>
                       )}

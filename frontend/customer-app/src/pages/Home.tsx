@@ -6,7 +6,7 @@ import GenreCard from "@/components/GenreCard";
 import SearchBar from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Book } from "@/types/book";
+import { type Book } from "@/types/book";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -49,7 +49,8 @@ export default function Home() {
     setSearchQuery(query);
   };
 
-  const displayBooks = searchQuery && searchData ? searchData.books : booksData?.books || [];
+  const displayBooks =
+    searchQuery && searchData ? searchData.books : booksData?.books || [];
   const isLoading = searchQuery ? searchLoading : booksLoading;
 
   return (
@@ -80,10 +81,7 @@ export default function Home() {
               {searchQuery ? "Search Results" : "Featured Books"}
             </h2>
             {!searchQuery && (
-              <Button
-                variant="outline"
-                onClick={() => navigate("/books")}
-              >
+              <Button variant="outline" onClick={() => navigate("/books")}>
                 View All Books
               </Button>
             )}
@@ -102,10 +100,7 @@ export default function Home() {
               <h2 className="text-3xl font-bold text-gray-900">
                 Browse by Genre
               </h2>
-              <Button
-                variant="outline"
-                onClick={() => navigate("/genres")}
-              >
+              <Button variant="outline" onClick={() => navigate("/genres")}>
                 View All Genres
               </Button>
             </div>

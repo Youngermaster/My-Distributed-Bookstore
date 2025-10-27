@@ -5,14 +5,18 @@ import BookGrid from "@/components/BookGrid";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, Loader2, User, Calendar } from "lucide-react";
-import { Book } from "@/types/book";
+import { type Book } from "@/types/book";
 
 export default function AuthorDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   // Fetch author details
-  const { data: authorData, isLoading: authorLoading, error } = useQuery({
+  const {
+    data: authorData,
+    isLoading: authorLoading,
+    error,
+  } = useQuery({
     queryKey: ["author", id],
     queryFn: async () => {
       if (!id) throw new Error("Author ID is required");
@@ -52,9 +56,7 @@ export default function AuthorDetail() {
           <p className="text-gray-500 mb-6">
             {error instanceof Error ? error.message : "An error occurred"}
           </p>
-          <Button onClick={() => navigate("/")}>
-            Back to Home
-          </Button>
+          <Button onClick={() => navigate("/")}>Back to Home</Button>
         </div>
       </div>
     );
@@ -81,9 +83,7 @@ export default function AuthorDetail() {
           <p className="text-gray-500 mb-6">
             This author doesn't exist or has been removed
           </p>
-          <Button onClick={() => navigate("/")}>
-            Back to Home
-          </Button>
+          <Button onClick={() => navigate("/")}>Back to Home</Button>
         </div>
       </div>
     );
