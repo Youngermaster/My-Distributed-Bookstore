@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: catalog-service-config
+  namespace: bookstore-dev
+data:
+  HTTP_PORT: "8081"
+  GRPC_PORT: "50051"
+  ENV: "development"
+  LOG_LEVEL: "info"
