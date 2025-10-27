@@ -1,69 +1,87 @@
 version: '3.9'
 
 services:
+  # PostgreSQL Database for Catalog Service
+  postgres:
+    image: postgres:15-alpine
+    container_name: bookstore-postgres
+    environment:
+      POSTGRES_USER: bookstore
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: catalog_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookstore"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+
+  # Catalog Service
+  catalog-service:
+    build:
+      context: ../catalog-service
+      dockerfile: Dockerfile
+    container_name: catalog-service
+    environment:
+      HTTP_PORT: 8081
+      GRPC_PORT: 50051
+      ENV: development
+      DATABASE_URL: postgresql://bookstore:dev_password@postgres:5432/catalog_db?sslmode=disable
+    ports:
+      - "8081:8081"
+      - "50051:50051"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # API Gateway
   api-gateway:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: api-gateway
-    ports:
-      - "8080:8080"
     environment:
-      # Server Configuration
       PORT: 8080
       ENV: development
-
-      # JWT Configuration
-      JWT_SECRET: dev_jwt_secret_change_in_production
-      JWT_EXPIRATION: 24h
-
-      # Redis Configuration
-      REDIS_URL: redis:6379
-      REDIS_PASSWORD: ""
-
-      # Downstream Services (gRPC)
-      CATALOG_SERVICE_URL: catalog-service:50051
-      USER_SERVICE_URL: user-service:50052
-      CART_SERVICE_URL: cart-service:50053
-      ORDER_SERVICE_URL: order-service:50054
-      PAYMENT_SERVICE_URL: payment-service:50055
-      INVENTORY_SERVICE_URL: inventory-service:50056
-      REVIEW_SERVICE_URL: review-service:50058
-      RECOMMENDATION_SERVICE_URL: recommendation-service:50059
-      ADMIN_SERVICE_URL: admin-service:50060
-
-      # Observability
-      JAEGER_AGENT_HOST: jaeger
-      JAEGER_AGENT_PORT: 6831
-      LOG_LEVEL: info
-
-      # Rate Limiting
+      CATALOG_SERVICE_URL: http://catalog-service:8081
+      RATE_LIMIT_ENABLED: "true"
       RATE_LIMIT_MAX: 100
       RATE_LIMIT_WINDOW: 1m
-
-      # Timeouts
+      ALLOWED_ORIGINS: "*"
       REQUEST_TIMEOUT: 30s
-      CIRCUIT_BREAKER_THRESHOLD: 5
+      JWT_SECRET: dev_jwt_secret_change_in_production
+    ports:
+      - "8080:8080"
     depends_on:
-      redis:
+      catalog-service:
         condition: service_healthy
     networks:
       - bookstore-network
     restart: unless-stopped
-
-  redis:
-    image: redis:7-alpine
-    container_name: api-gateway-redis
-    ports:
-      - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-    networks:
-      - bookstore-network
-    restart: unless-stopped
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  postgres_data:
 
 networks:
   bookstore-network:
