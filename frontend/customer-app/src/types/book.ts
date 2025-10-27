@@ -49,16 +49,19 @@ export interface Publisher {
 export interface BookFilters {
   title?: string;
   author?: string;
+  author_id?: string;
   category_id?: string;
   min_price?: number;
   max_price?: number;
+  page?: number;
+  page_size?: number;
   limit?: number;
   offset?: number;
 }
 
 export interface BooksResponse {
-  data: Book[];
+  books: Book[];
   total: number;
-  limit: number;
-  offset: number;
+  page: number;
+  page_size: number;
 }

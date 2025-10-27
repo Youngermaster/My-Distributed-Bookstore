@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { booksAPI, categoriesAPI } from "@/lib/api";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, Link } from "@tanstack/react-router";
 import BookGrid from "@/components/BookGrid";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { type Book } from "@/types/book";
 
 export default function GenreDetail() {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug } = useParams({ from: "/genres/$slug" });
   const navigate = useNavigate();
 
   // Fetch all categories to find the one matching the slug
@@ -38,7 +38,7 @@ export default function GenreDetail() {
   });
 
   const handleBookClick = (book: Book) => {
-    navigate(`/books/${book.id}`);
+    navigate({ to: "/books/$id", params: { id: book.id } });
   };
 
   if (categoriesLoading) {
@@ -60,7 +60,9 @@ export default function GenreDetail() {
           <p className="text-gray-500 mb-6">
             The genre "{slug}" doesn't exist or has been removed
           </p>
-          <Button onClick={() => navigate("/genres")}>Browse All Genres</Button>
+          <Button onClick={() => navigate({ to: "/genres" })}>
+            Browse All Genres
+          </Button>
         </div>
       </div>
     );
@@ -70,7 +72,7 @@ export default function GenreDetail() {
     <div className="min-h-screen bg-gray-50">
       {/* Breadcrumb */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <nav className="flex items-center text-sm text-gray-600">
             <Link to="/" className="hover:text-gray-900">
               Home
@@ -87,11 +89,11 @@ export default function GenreDetail() {
 
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <Button
             variant="ghost"
             className="mb-4 text-white hover:text-white hover:bg-white/20"
-            onClick={() => navigate("/genres")}
+            onClick={() => navigate({ to: "/genres" })}
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
             Back to Genres
@@ -107,7 +109,7 @@ export default function GenreDetail() {
       </div>
 
       {/* Books Grid */}
-      <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <BookGrid
           books={booksData?.books || []}
           isLoading={booksLoading}

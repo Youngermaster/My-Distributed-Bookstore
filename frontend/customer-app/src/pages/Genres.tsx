@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { categoriesAPI } from "@/lib/api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import GenreCard from "@/components/GenreCard";
 import { Loader2 } from "lucide-react";
 
@@ -35,7 +35,7 @@ export default function Genres() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Browse by Genre
           </h1>
@@ -46,7 +46,7 @@ export default function Genres() {
       </div>
 
       {/* Genres Grid */}
-      <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-12 w-12 animate-spin text-gray-400" />
@@ -63,7 +63,12 @@ export default function Genres() {
                 <GenreCard
                   key={category.id}
                   category={category}
-                  onClick={() => navigate(`/genres/${category.slug}`)}
+                  onClick={() =>
+                    navigate({
+                      to: "/genres/$slug",
+                      params: { slug: category.slug },
+                    })
+                  }
                 />
               ))}
             </div>
@@ -74,9 +79,7 @@ export default function Genres() {
             <h3 className="text-xl font-semibold text-gray-700 mb-2">
               No genres found
             </h3>
-            <p className="text-gray-500">
-              Check back later for new genres
-            </p>
+            <p className="text-gray-500">Check back later for new genres</p>
           </div>
         )}
       </div>

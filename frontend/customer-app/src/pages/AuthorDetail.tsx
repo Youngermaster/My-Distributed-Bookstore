@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { authorsAPI, booksAPI } from "@/lib/api";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, Link } from "@tanstack/react-router";
 import BookGrid from "@/components/BookGrid";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { ChevronLeft, Loader2, User, Calendar } from "lucide-react";
 import { type Book } from "@/types/book";
 
 export default function AuthorDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams({ from: "/authors/$id" });
   const navigate = useNavigate();
 
   // Fetch author details
@@ -42,7 +42,7 @@ export default function AuthorDetail() {
   });
 
   const handleBookClick = (book: Book) => {
-    navigate(`/books/${book.id}`);
+    navigate({ to: "/books/$id", params: { id: book.id } });
   };
 
   if (error) {
@@ -56,7 +56,7 @@ export default function AuthorDetail() {
           <p className="text-gray-500 mb-6">
             {error instanceof Error ? error.message : "An error occurred"}
           </p>
-          <Button onClick={() => navigate("/")}>Back to Home</Button>
+          <Button onClick={() => navigate({ to: "/" })}>Back to Home</Button>
         </div>
       </div>
     );
@@ -83,7 +83,7 @@ export default function AuthorDetail() {
           <p className="text-gray-500 mb-6">
             This author doesn't exist or has been removed
           </p>
-          <Button onClick={() => navigate("/")}>Back to Home</Button>
+          <Button onClick={() => navigate({ to: "/" })}>Back to Home</Button>
         </div>
       </div>
     );
@@ -93,15 +93,13 @@ export default function AuthorDetail() {
     <div className="min-h-screen bg-gray-50">
       {/* Breadcrumb */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <nav className="flex items-center text-sm text-gray-600">
             <Link to="/" className="hover:text-gray-900">
               Home
             </Link>
             <span className="mx-2">/</span>
-            <Link to="/authors" className="hover:text-gray-900">
-              Authors
-            </Link>
+            <span className="text-gray-600">Authors</span>
             <span className="mx-2">/</span>
             <span className="text-gray-900 font-medium">{author.name}</span>
           </nav>
@@ -110,11 +108,11 @@ export default function AuthorDetail() {
 
       {/* Author Info Section */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <Button
             variant="ghost"
             className="mb-4 text-white hover:text-white hover:bg-white/20"
-            onClick={() => navigate(-1)}
+            onClick={() => window.history.back()}
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
             Back
@@ -146,7 +144,7 @@ export default function AuthorDetail() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Biography */}
         {author.bio && (
           <Card className="mb-12">

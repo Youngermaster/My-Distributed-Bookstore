@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { booksAPI, categoriesAPI } from "@/lib/api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import BookGrid from "@/components/BookGrid";
 import GenreCard from "@/components/GenreCard";
 import SearchBar from "@/components/SearchBar";
@@ -42,7 +42,7 @@ export default function Home() {
   });
 
   const handleBookClick = (book: Book) => {
-    navigate(`/books/${book.id}`);
+    navigate({ to: "/books/$id", params: { id: book.id } });
   };
 
   const handleSearch = (query: string) => {
@@ -56,10 +56,10 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4">
+      <div className="bg-black text-white py-16">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 text-center">
-            Welcome to Our Bookstore
+            Welcome to Ohara Bookstore
           </h1>
           <p className="text-xl mb-8 text-center text-blue-100">
             Discover your next favorite book
@@ -73,7 +73,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Search Results or Featured Books */}
         <section className="mb-16">
           <div className="flex items-center justify-between mb-6">
@@ -81,7 +81,10 @@ export default function Home() {
               {searchQuery ? "Search Results" : "Featured Books"}
             </h2>
             {!searchQuery && (
-              <Button variant="outline" onClick={() => navigate("/books")}>
+              <Button
+                variant="outline"
+                onClick={() => navigate({ to: "/books" })}
+              >
                 View All Books
               </Button>
             )}
@@ -100,7 +103,10 @@ export default function Home() {
               <h2 className="text-3xl font-bold text-gray-900">
                 Browse by Genre
               </h2>
-              <Button variant="outline" onClick={() => navigate("/genres")}>
+              <Button
+                variant="outline"
+                onClick={() => navigate({ to: "/genres" })}
+              >
                 View All Genres
               </Button>
             </div>
@@ -114,7 +120,12 @@ export default function Home() {
                   <GenreCard
                     key={category.id}
                     category={category}
-                    onClick={() => navigate(`/genres/${category.slug}`)}
+                    onClick={() =>
+                      navigate({
+                        to: "/genres/$slug",
+                        params: { slug: category.slug },
+                      })
+                    }
                   />
                 ))}
               </div>

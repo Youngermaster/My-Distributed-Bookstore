@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { booksAPI, wishlistAPI } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
@@ -14,7 +14,7 @@ import {
 import { Heart } from "lucide-react";
 
 export default function BookDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams({ from: "/books/$id" });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuthStore();
@@ -46,7 +46,7 @@ export default function BookDetail() {
 
   const handleAddToWishlist = () => {
     if (!isAuthenticated) {
-      navigate("/login");
+      navigate({ to: "/login" });
       return;
     }
     if (id) {
@@ -62,7 +62,7 @@ export default function BookDetail() {
     );
   }
 
-  if (!bookData?.data) {
+  if (!bookData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-full max-w-md">
@@ -82,13 +82,13 @@ export default function BookDetail() {
     );
   }
 
-  const book = bookData.data;
+  const book = bookData;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
         <Link to="/" className="inline-block mb-6">
-          <Button variant="outline">← Back to Books</Button>
+          <Button variant="outline">← Back to Home</Button>
         </Link>
 
         {message && (

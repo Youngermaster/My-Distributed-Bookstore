@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { booksAPI, categoriesAPI } from "@/lib/api";
 import {
   Card,
@@ -65,7 +65,7 @@ export default function BookList() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Bookstore</h1>
           <p className="text-gray-600">Discover your next favorite book</p>
@@ -86,10 +86,10 @@ export default function BookList() {
           </form>
 
           {/* Category Filters */}
-          {categoriesData?.data && (
+          {categoriesData?.categories && (
             <div className="flex flex-wrap gap-2">
               <Label className="self-center">Categories:</Label>
-              {categoriesData.data.map((category) => (
+              {categoriesData.categories.map((category) => (
                 <Button
                   key={category.id}
                   variant={
@@ -110,14 +110,14 @@ export default function BookList() {
           <div className="text-center py-12">
             <p className="text-gray-600">Loading books...</p>
           </div>
-        ) : !booksData?.data || booksData.data.length === 0 ? (
+        ) : !booksData?.books || booksData.books.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-600">No books found</p>
           </div>
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-              {booksData.data.map((book) => (
+              {booksData.books.map((book) => (
                 <Card key={book.id} className="flex flex-col">
                   <CardHeader>
                     {book.cover_image_url && (
@@ -150,7 +150,11 @@ export default function BookList() {
                     </p>
                   </CardContent>
                   <CardFooter>
-                    <Link to={`/books/${book.id}`} className="w-full">
+                    <Link
+                      to="/books/$id"
+                      params={{ id: book.id }}
+                      className="w-full"
+                    >
                       <Button className="w-full">View Details</Button>
                     </Link>
                   </CardFooter>

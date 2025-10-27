@@ -222,7 +222,7 @@ func SeedDatabase(db *gorm.DB) error {
 			Price:           89.99,
 			StockQuantity:   30,
 			PublisherID:     &publishers[2].ID,
-			CoverImageURL:   "https://m.media-amazon.com/images/I/41gFVqNk+mL.jpg",
+			CoverImageURL:   "https://m.media-amazon.com/images/I/51OE8WCts7L._SL1360_.jpg",
 			PublicationDate: &pubDate3,
 			Language:        "English",
 			PageCount:       596,
