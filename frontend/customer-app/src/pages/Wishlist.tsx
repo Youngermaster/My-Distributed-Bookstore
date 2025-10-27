@@ -1,25 +1,32 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { wishlistAPI } from '@/lib/api';
-import { useAuthStore } from '@/store/authStore';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trash2 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { wishlistAPI } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Trash2 } from "lucide-react";
 
 export default function Wishlist() {
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuthStore();
 
   const { data: wishlistData, isLoading } = useQuery({
-    queryKey: ['wishlist'],
-    queryFn: () => wishlistAPI.list().then(res => res.data),
+    queryKey: ["wishlist"],
+    queryFn: () => wishlistAPI.list().then((res) => res.data),
     enabled: isAuthenticated,
   });
 
   const removeFromWishlistMutation = useMutation({
     mutationFn: (bookId: string) => wishlistAPI.remove(bookId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['wishlist'] });
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
     },
   });
 
@@ -29,7 +36,9 @@ export default function Wishlist() {
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Login Required</CardTitle>
-            <CardDescription>You need to be logged in to view your wishlist</CardDescription>
+            <CardDescription>
+              You need to be logged in to view your wishlist
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Link to="/login">
@@ -53,12 +62,14 @@ export default function Wishlist() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">My Wishlist</h1>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              My Wishlist
+            </h1>
             <p className="text-gray-600">
-              {items.length} {items.length === 1 ? 'book' : 'books'} saved
+              {items.length} {items.length === 1 ? "book" : "books"} saved
             </p>
           </div>
           <Link to="/">
@@ -100,7 +111,8 @@ export default function Wishlist() {
                     )}
                     <CardTitle className="line-clamp-2">{book.title}</CardTitle>
                     <CardDescription className="line-clamp-1">
-                      {book.authors?.map(a => a.name).join(', ') || 'Unknown Author'}
+                      {book.authors?.map((a) => a.name).join(", ") ||
+                        "Unknown Author"}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex-1">
@@ -109,7 +121,9 @@ export default function Wishlist() {
                     </p>
                     <p className="text-sm text-gray-500 mt-1">
                       {book.stock_quantity > 0 ? (
-                        <span className="text-green-600">In Stock ({book.stock_quantity})</span>
+                        <span className="text-green-600">
+                          In Stock ({book.stock_quantity})
+                        </span>
                       ) : (
                         <span className="text-red-600">Out of Stock</span>
                       )}
@@ -119,8 +133,14 @@ export default function Wishlist() {
                     </p>
                   </CardContent>
                   <CardFooter className="flex gap-2">
-                    <Link to={`/books/${book.id}`} className="flex-1">
-                      <Button className="w-full" variant="outline">View Details</Button>
+                    <Link
+                      to="/books/$id"
+                      params={{ id: book.id }}
+                      className="flex-1"
+                    >
+                      <Button className="w-full" variant="outline">
+                        View Details
+                      </Button>
                     </Link>
                     <Button
                       variant="outline"
