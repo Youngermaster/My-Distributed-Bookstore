@@ -64,11 +64,11 @@ export default function BookList() {
   const totalPages = Math.ceil((booksData?.total || 0) / (filters.limit || 20));
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Bookstore</h1>
-          <p className="text-gray-600">Discover your next favorite book</p>
+          <h1 className="text-4xl font-bold text-foreground mb-2">Bookstore</h1>
+          <p className="text-muted-foreground">Discover your next favorite book</p>
         </div>
 
         {/* Search and Filters */}
@@ -108,11 +108,11 @@ export default function BookList() {
         {/* Books Grid */}
         {booksLoading ? (
           <div className="text-center py-12">
-            <p className="text-gray-600">Loading books...</p>
+            <p className="text-muted-foreground">Loading books...</p>
           </div>
         ) : !booksData?.books || booksData.books.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600">No books found</p>
+            <p className="text-muted-foreground">No books found</p>
           </div>
         ) : (
           <>
@@ -172,7 +172,7 @@ export default function BookList() {
                 >
                   Previous
                 </Button>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-muted-foreground">
                   Page {currentPage} of {totalPages}
                 </span>
                 <Button

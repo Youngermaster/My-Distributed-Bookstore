@@ -43,21 +43,21 @@ export default function GenreDetail() {
 
   if (categoriesLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-gray-400" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (!category) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">❓</div>
-          <h2 className="text-2xl font-semibold text-gray-700 mb-2">
+          <h2 className="text-2xl font-semibold text-foreground mb-2">
             Genre not found
           </h2>
-          <p className="text-gray-500 mb-6">
+          <p className="text-muted-foreground mb-6">
             The genre "{slug}" doesn't exist or has been removed
           </p>
           <Button onClick={() => navigate({ to: "/genres" })}>
@@ -69,30 +69,30 @@ export default function GenreDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Breadcrumb */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-card border-b border-border">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <nav className="flex items-center text-sm text-gray-600">
-            <Link to="/" className="hover:text-gray-900">
+          <nav className="flex items-center text-sm text-muted-foreground">
+            <Link to="/" className="hover:text-foreground">
               Home
             </Link>
             <span className="mx-2">/</span>
-            <Link to="/genres" className="hover:text-gray-900">
+            <Link to="/genres" className="hover:text-foreground">
               Genres
             </Link>
             <span className="mx-2">/</span>
-            <span className="text-gray-900 font-medium">{category.name}</span>
+            <span className="text-foreground font-medium">{category.name}</span>
           </nav>
         </div>
       </div>
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12">
+      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-12">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <Button
             variant="ghost"
-            className="mb-4 text-white hover:text-white hover:bg-white/20"
+            className="mb-4 text-primary-foreground hover:text-primary-foreground hover:bg-primary-foreground/20"
             onClick={() => navigate({ to: "/genres" })}
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
@@ -100,7 +100,7 @@ export default function GenreDetail() {
           </Button>
           <h1 className="text-4xl font-bold mb-2">{category.name}</h1>
           {booksData && (
-            <p className="text-lg text-blue-100">
+            <p className="text-lg opacity-90">
               {booksData.books.length}{" "}
               {booksData.books.length === 1 ? "book" : "books"} in this genre
             </p>

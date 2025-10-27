@@ -32,7 +32,7 @@ export default function Wishlist() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Login Required</CardTitle>
@@ -52,8 +52,8 @@ export default function Wishlist() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-600">Loading your wishlist...</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading your wishlist...</p>
       </div>
     );
   }
@@ -61,14 +61,14 @@ export default function Wishlist() {
   const items = wishlistData?.data || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            <h1 className="text-4xl font-bold text-foreground mb-2">
               My Wishlist
             </h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               {items.length} {items.length === 1 ? "book" : "books"} saved
             </p>
           </div>

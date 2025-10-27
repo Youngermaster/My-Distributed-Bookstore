@@ -47,13 +47,13 @@ export default function AuthorDetail() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">❓</div>
-          <h2 className="text-2xl font-semibold text-gray-700 mb-2">
+          <h2 className="text-2xl font-semibold text-foreground mb-2">
             Author not found
           </h2>
-          <p className="text-gray-500 mb-6">
+          <p className="text-muted-foreground mb-6">
             {error instanceof Error ? error.message : "An error occurred"}
           </p>
           <Button onClick={() => navigate({ to: "/" })}>Back to Home</Button>
@@ -64,8 +64,8 @@ export default function AuthorDetail() {
 
   if (authorLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-gray-400" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -74,13 +74,13 @@ export default function AuthorDetail() {
 
   if (!author) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">❓</div>
-          <h2 className="text-2xl font-semibold text-gray-700 mb-2">
+          <h2 className="text-2xl font-semibold text-foreground mb-2">
             Author not found
           </h2>
-          <p className="text-gray-500 mb-6">
+          <p className="text-muted-foreground mb-6">
             This author doesn't exist or has been removed
           </p>
           <Button onClick={() => navigate({ to: "/" })}>Back to Home</Button>
@@ -90,28 +90,28 @@ export default function AuthorDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Breadcrumb */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-card border-b border-border">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <nav className="flex items-center text-sm text-gray-600">
-            <Link to="/" className="hover:text-gray-900">
+          <nav className="flex items-center text-sm text-muted-foreground">
+            <Link to="/" className="hover:text-foreground">
               Home
             </Link>
             <span className="mx-2">/</span>
-            <span className="text-gray-600">Authors</span>
+            <span className="text-muted-foreground">Authors</span>
             <span className="mx-2">/</span>
-            <span className="text-gray-900 font-medium">{author.name}</span>
+            <span className="text-foreground font-medium">{author.name}</span>
           </nav>
         </div>
       </div>
 
       {/* Author Info Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12">
+      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-12">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <Button
             variant="ghost"
-            className="mb-4 text-white hover:text-white hover:bg-white/20"
+            className="mb-4 text-primary-foreground hover:text-primary-foreground hover:bg-primary-foreground/20"
             onClick={() => window.history.back()}
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
@@ -119,14 +119,14 @@ export default function AuthorDetail() {
           </Button>
           <div className="flex items-start gap-8">
             <div className="flex-shrink-0">
-              <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center">
-                <User className="h-16 w-16 text-white" />
+              <div className="w-32 h-32 bg-primary-foreground/20 rounded-full flex items-center justify-center">
+                <User className="h-16 w-16 text-primary-foreground" />
               </div>
             </div>
             <div className="flex-1">
               <h1 className="text-4xl font-bold mb-4">{author.name}</h1>
               {author.birth_date && (
-                <div className="flex items-center gap-2 text-blue-100 mb-4">
+                <div className="flex items-center gap-2 opacity-90 mb-4">
                   <Calendar className="h-4 w-4" />
                   <span>
                     Born: {new Date(author.birth_date).toLocaleDateString()}
@@ -134,7 +134,7 @@ export default function AuthorDetail() {
                 </div>
               )}
               {booksData && (
-                <p className="text-lg text-blue-100">
+                <p className="text-lg opacity-90">
                   {booksData.books.length} published{" "}
                   {booksData.books.length === 1 ? "book" : "books"}
                 </p>
@@ -149,10 +149,10 @@ export default function AuthorDetail() {
         {author.bio && (
           <Card className="mb-12">
             <CardContent className="p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              <h2 className="text-2xl font-bold text-foreground mb-4">
                 Biography
               </h2>
-              <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+              <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
                 {author.bio}
               </p>
             </CardContent>
@@ -161,7 +161,7 @@ export default function AuthorDetail() {
 
         {/* Books by this author */}
         <section>
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">
+          <h2 className="text-3xl font-bold text-foreground mb-6">
             Books by {author.name}
           </h2>
           <BookGrid
