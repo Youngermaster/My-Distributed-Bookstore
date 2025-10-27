@@ -28,8 +28,8 @@ WORKDIR /root/
 # Copy binary from builder
 COPY --from=builder /app/main .
 
-# Copy migrations if they exist
-COPY --from=builder /app/migrations ./migrations 2>/dev/null || true
+# Copy migrations
+COPY --from=builder /app/migrations ./migrations
 
 # Expose ports
 EXPOSE 8081 50051

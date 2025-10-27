@@ -73,7 +73,7 @@ proto/generated/
 *_pb2_grpc.py
 
 # Secrets
-secrets/
+# secrets/
 *.pem
 *.key
 *.crt

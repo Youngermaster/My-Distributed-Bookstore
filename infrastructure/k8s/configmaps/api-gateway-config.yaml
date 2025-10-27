@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-gateway-config
+  namespace: bookstore-dev
+data:
+  PORT: "8080"
+  ENV: "development"
+  CATALOG_SERVICE_URL: "http://catalog-service:8081"
+  RATE_LIMIT_ENABLED: "true"
+  RATE_LIMIT_MAX: "100"
+  RATE_LIMIT_WINDOW: "1m"
+  ALLOWED_ORIGINS: "*"
+  REQUEST_TIMEOUT: "30s"
