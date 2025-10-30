@@ -38,7 +38,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bookstore"]
+      test: ["CMD-SHELL", "pg_isready -U bookstore -d reviews_db"]
       interval: 10s
       timeout: 5s
       retries: 5
