@@ -31,6 +31,26 @@ router = APIRouter(prefix="/inventory", tags=["inventory"])
 # Inventory Management Endpoints
 # ============================================================================
 
+@router.get(
+    "/low-stock",
+    response_model=LowStockListResponse,
+    summary="Get low stock items",
+    description="Retrieve list of books with stock below reorder level"
+)
+async def get_low_stock(
+    db: Annotated[AsyncSession, Depends(get_db)]
+):
+    """Get all inventory items with stock below their reorder level."""
+    try:
+        low_stock_items = await InventoryService.get_low_stock_items(db)
+        return LowStockListResponse(items=low_stock_items, total=len(low_stock_items))
+    except Exception as e:
+        logger.error(f"Error retrieving low stock items: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve low stock items"
+        )
+
 @router.post(
     "",
     response_model=InventoryResponse,
