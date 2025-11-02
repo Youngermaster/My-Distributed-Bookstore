@@ -8,6 +8,17 @@ import type {
 import type { Book, BookFilters, BooksResponse, Category } from "@/types/book";
 import type { User } from "@/types/user";
 import type { WishlistItem, WishlistResponse } from "@/types/wishlist";
+import type {
+  Cart,
+  AddToCartRequest,
+  UpdateCartItemRequest,
+} from "@/types/cart";
+import type {
+  Order,
+  CreateOrderRequest,
+  UpdateOrderStatusRequest,
+  OrderListResponse,
+} from "@/types/order";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080",
@@ -134,6 +145,51 @@ export const wishlistAPI = {
 
   remove: (book_id: string) =>
     api.delete(`/api/v1/users/me/wishlist/${book_id}`),
+};
+
+// Cart API (through API Gateway -> Cart Service)
+export const cartAPI = {
+  get: (cartId: string) => api.get<Cart>(`/api/v1/cart/${cartId}`),
+
+  addItem: (cartId: string, data: AddToCartRequest) =>
+    api.post<Cart>(`/api/v1/cart/${cartId}/items`, data),
+
+  updateItem: (cartId: string, bookId: string, data: UpdateCartItemRequest) =>
+    api.put<Cart>(`/api/v1/cart/${cartId}/items/${bookId}`, data),
+
+  removeItem: (cartId: string, bookId: string) =>
+    api.delete<Cart>(`/api/v1/cart/${cartId}/items/${bookId}`),
+
+  clear: (cartId: string) =>
+    api.delete<{ success: boolean; message: string }>(
+      `/api/v1/cart/${cartId}`
+    ),
+};
+
+// Order API (through API Gateway -> Order Service)
+export const orderAPI = {
+  create: (data: CreateOrderRequest) =>
+    api.post<Order>("/api/v1/orders", data),
+
+  get: (id: string) => api.get<Order>(`/api/v1/orders/${id}`),
+
+  list: (page = 1, pageSize = 20) =>
+    api.get<OrderListResponse>("/api/v1/orders", {
+      params: { page, page_size: pageSize },
+    }),
+
+  getUserOrders: (userId: string, page = 1, pageSize = 20) =>
+    api.get<OrderListResponse>(`/api/v1/users/${userId}/orders`, {
+      params: { page, page_size: pageSize },
+    }),
+
+  updateStatus: (id: string, data: UpdateOrderStatusRequest) =>
+    api.patch<Order>(`/api/v1/orders/${id}/status`, data),
+
+  cancel: (id: string) =>
+    api.post<{ success: boolean; message: string }>(
+      `/api/v1/orders/${id}/cancel`
+    ),
 };
 
 export default api;
