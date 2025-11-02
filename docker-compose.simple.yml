@@ -1,0 +1,94 @@
+services:
+  # ========================================
+  # DATABASES
+  # ========================================
+  
+  # Redis for Cart Service
+  cart-redis:
+    image: redis:7-alpine
+    container_name: cart-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bookstore-network
+
+  # Order Database
+  order-db:
+    image: postgres:15-alpine
+    container_name: order-db
+    environment:
+      POSTGRES_USER: orderuser
+      POSTGRES_PASSWORD: orderpass123
+      POSTGRES_DB: orderdb
+    ports:
+      - "5434:5432"
+    volumes:
+      - order_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orderuser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bookstore-network
+
+  # ========================================
+  # MICROSERVICES
+  # ========================================
+
+  # Cart Service (Go)
+  cart-service:
+    build:
+      context: ./services/cart-service
+      dockerfile: Dockerfile
+    container_name: cart-service
+    environment:
+      REDIS_HOST: cart-redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ""
+      REDIS_DB: 0
+      HTTP_PORT: "8083"
+      PORT: 8083
+    ports:
+      - "8083:8083"
+    depends_on:
+      cart-redis:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+
+  # Order Service (Go)
+  order-service:
+    build:
+      context: ./services/order-service
+      dockerfile: Dockerfile
+    container_name: order-service
+    environment:
+      DB_HOST: order-db
+      DB_PORT: 5432
+      DB_USER: orderuser
+      DB_PASSWORD: orderpass123
+      DB_NAME: orderdb
+      PORT: 8084
+    ports:
+      - "8084:8084"
+    depends_on:
+      order-db:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+
+volumes:
+  order_data:
+    driver: local
+
+networks:
+  bookstore-network:
+    driver: bridge

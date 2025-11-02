@@ -1,31 +1,112 @@
-version: '3.8'
-
 services:
-  # PostgreSQL Database
-  postgres:
+  # ========================================
+  # DATABASES
+  # ========================================
+  
+  # Catalog Database
+  catalog-db:
     image: postgres:15-alpine
-    container_name: bookstore-postgres
+    container_name: catalog-db
     environment:
-      POSTGRES_USER: bookstore
-      POSTGRES_PASSWORD: dev_password
-      POSTGRES_DB: bookstore
+      POSTGRES_USER: catalog
+      POSTGRES_PASSWORD: catalog123
+      POSTGRES_DB: catalog
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+      - catalog_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bookstore"]
+      test: ["CMD-SHELL", "pg_isready -U catalog"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - bookstore-network
 
-  # Redis Cache
-  redis:
+  # User Database
+  user-db:
+    image: postgres:15-alpine
+    container_name: user-db
+    environment:
+      POSTGRES_USER: userservice
+      POSTGRES_PASSWORD: userpass123
+      POSTGRES_DB: userdb
+    ports:
+      - "5433:5432"
+    volumes:
+      - user_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U userservice"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bookstore-network
+
+  # Order Database
+  order-db:
+    image: postgres:15-alpine
+    container_name: order-db
+    environment:
+      POSTGRES_USER: orderuser
+      POSTGRES_PASSWORD: orderpass123
+      POSTGRES_DB: orderdb
+    ports:
+      - "5434:5432"
+    volumes:
+      - order_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orderuser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bookstore-network
+
+  # Inventory Database
+  inventory-db:
+    image: postgres:15-alpine
+    container_name: inventory-db
+    environment:
+      POSTGRES_USER: inventoryuser
+      POSTGRES_PASSWORD: inventorypass
+      POSTGRES_DB: inventorydb
+    ports:
+      - "5435:5432"
+    volumes:
+      - inventory_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inventoryuser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bookstore-network
+
+  # Review Database
+  review-db:
+    image: postgres:15-alpine
+    container_name: review-db
+    environment:
+      POSTGRES_USER: reviewuser
+      POSTGRES_PASSWORD: reviewpass
+      POSTGRES_DB: reviewdb
+    ports:
+      - "5436:5432"
+    volumes:
+      - review_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reviewuser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bookstore-network
+
+  # Redis for Cart Service
+  cart-redis:
     image: redis:7-alpine
-    container_name: bookstore-redis
+    container_name: cart-redis
     ports:
       - "6379:6379"
     healthcheck:
@@ -36,111 +117,206 @@ services:
     networks:
       - bookstore-network
 
-  # Books Service
-  books-service:
-    build:
-      context: ./services/books-service
-      dockerfile: Dockerfile
-    container_name: books-service
+  # RabbitMQ for Notification Service
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: bookstore-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
     environment:
-      DB_HOST: postgres
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bookstore-network
+
+  # ========================================
+  # MICROSERVICES
+  # ========================================
+
+  # Catalog Service (Go)
+  catalog-service:
+    build:
+      context: ./services/catalog-service
+      dockerfile: Dockerfile
+    container_name: catalog-service
+    environment:
+      DB_HOST: catalog-db
       DB_PORT: 5432
-      DB_USER: bookstore
-      DB_PASSWORD: dev_password
-      DB_NAME: bookstore_books
-      DB_SSL_MODE: disable
-      REDIS_URL: redis:6379
+      DB_USER: catalog
+      DB_PASSWORD: catalog123
+      DB_NAME: catalog
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      catalog-db:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+
+  # User Service (Go)
+  user-service:
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    environment:
+      DB_HOST: user-db
+      DB_PORT: 5432
+      DB_USER: userservice
+      DB_PASSWORD: userpass123
+      DB_NAME: userdb
       PORT: 8081
-      GRPC_PORT: 9091
-      ENV: development
     ports:
       - "8081:8081"
-      - "9091:9091"
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
+      user-db:
         condition: service_healthy
     networks:
       - bookstore-network
     restart: unless-stopped
 
-  # Users Service
-  users-service:
+  # Cart Service (Go)
+  cart-service:
     build:
-      context: ./services/users-service
+      context: ./services/cart-service
       dockerfile: Dockerfile
-    container_name: users-service
+    container_name: cart-service
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: bookstore
-      DB_PASSWORD: dev_password
-      DB_NAME: bookstore_users
-      DB_SSL_MODE: disable
-      JWT_SECRET: dev_jwt_secret_change_in_production_please
-      JWT_EXPIRATION_HOURS: 24
-      PORT: 8082
-      GRPC_PORT: 9092
-      ENV: development
+      REDIS_ADDR: cart-redis:6379
+      REDIS_PASSWORD: ""
+      REDIS_DB: 0
+      PORT: 8083
     ports:
-      - "8082:8082"
-      - "9092:9092"
+      - "8083:8083"
     depends_on:
-      postgres:
+      cart-redis:
         condition: service_healthy
     networks:
       - bookstore-network
     restart: unless-stopped
 
-  # Logging Service
-  logging-service:
+  # Order Service (Go)
+  order-service:
     build:
-      context: ./services/logging-service
+      context: ./services/order-service
       dockerfile: Dockerfile
-    container_name: logging-service
+    container_name: order-service
     environment:
-      DB_HOST: postgres
+      DB_HOST: order-db
       DB_PORT: 5432
-      DB_USER: bookstore
-      DB_PASSWORD: dev_password
-      DB_NAME: bookstore_logs
-      DB_SSL_MODE: disable
+      DB_USER: orderuser
+      DB_PASSWORD: orderpass123
+      DB_NAME: orderdb
       PORT: 8084
-      GRPC_PORT: 9094
-      ENV: development
     ports:
       - "8084:8084"
-      - "9094:9094"
     depends_on:
-      postgres:
+      order-db:
         condition: service_healthy
     networks:
       - bookstore-network
     restart: unless-stopped
 
-  # Frontend Service
-  frontend:
+  # Inventory Service (Python/FastAPI)
+  inventory-service:
     build:
-      context: ./frontend/customer-app
+      context: ./services/inventory-service
       dockerfile: Dockerfile
-    container_name: bookstore-frontend
+    container_name: inventory-service
+    environment:
+      DATABASE_URL: postgresql://inventoryuser:inventorypass@inventory-db:5432/inventorydb
+      PORT: 8085
     ports:
-      - "3000:80"
+      - "8085:8085"
     depends_on:
-      - books-service
-      - users-service
+      inventory-db:
+        condition: service_healthy
     networks:
       - bookstore-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+
+  # Review Service (Python/FastAPI)
+  review-service:
+    build:
+      context: ./services/review-service
+      dockerfile: Dockerfile
+    container_name: review-service
+    environment:
+      DATABASE_URL: postgresql://reviewuser:reviewpass@review-db:5432/reviewdb
+      PORT: 8086
+    ports:
+      - "8086:8086"
+    depends_on:
+      review-db:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+
+  # Recommendation Service (Python/FastAPI)
+  recommendation-service:
+    build:
+      context: ./services/recommendation-service
+      dockerfile: Dockerfile
+    container_name: recommendation-service
+    environment:
+      PORT: 8087
+    ports:
+      - "8087:8087"
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+
+  # Payment Service (Node.js)
+  payment-service:
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+    container_name: payment-service
+    environment:
+      PORT: 8088
+    ports:
+      - "8088:8088"
+    networks:
+      - bookstore-network
+    restart: unless-stopped
+
+  # Notification Service (Node.js)
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    environment:
+      PORT: 8089
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    ports:
+      - "8089:8089"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    restart: unless-stopped
 
 volumes:
-  postgres_data:
+  catalog_data:
+    driver: local
+  user_data:
+    driver: local
+  order_data:
+    driver: local
+  inventory_data:
+    driver: local
+  review_data:
     driver: local
 
 networks:

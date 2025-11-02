@@ -4,7 +4,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useThemeStore } from "@/store/themeStore";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
-import { Heart, BookOpen, LogOut, User, Shield } from "lucide-react";
+import { Heart, BookOpen, LogOut, User, Shield, ShoppingCart, Package } from "lucide-react";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient({
@@ -45,6 +45,13 @@ function Navigation() {
               >
                 Genres
               </Link>
+              <Link
+                to="/cart"
+                className="text-foreground/70 hover:text-foreground font-medium"
+              >
+                <ShoppingCart className="h-4 w-4 inline mr-1" />
+                Cart
+              </Link>
             </div>
           </div>
 
@@ -56,6 +63,12 @@ function Navigation() {
                   <Button variant="ghost" size="sm">
                     <Heart className="h-4 w-4 mr-2" />
                     Wishlist
+                  </Button>
+                </Link>
+                <Link to="/orders">
+                  <Button variant="ghost" size="sm">
+                    <Package className="h-4 w-4 mr-2" />
+                    Orders
                   </Button>
                 </Link>
                 {isAdmin && (

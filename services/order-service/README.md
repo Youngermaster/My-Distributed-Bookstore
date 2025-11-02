@@ -1,79 +1,122 @@
 # Order Service
 
-## Overview
-
-Manages order creation, saga orchestration for distributed transactions, and order lifecycle management.
+Simple order management service for the distributed bookstore.
 
 ## Technology Stack
 
 - **Language**: Go 1.21+
 - **Framework**: Fiber v2
-- **ORM**: GORM
 - **Database**: PostgreSQL 15
-- **Messaging**: RabbitMQ
-- **Ports**: HTTP: 8084, gRPC: 50054
+- **ORM**: GORM
+- **Port**: 8084
 
-## Responsibilities
+## Architecture
 
-- Order creation and management
-- Saga orchestration (choreography pattern)
-- Order status tracking
-- Order history
-- Coordination with Payment and Inventory services
-- Compensating transactions
-
-## Database Schema
-
-**orders**: id, user_id, status, total_amount, shipping_address_id, payment_method, tracking_number, created_at, updated_at
-**order_items**: id, order_id, book_id, quantity, unit_price, subtotal
-**order_status_history**: id, order_id, previous_status, new_status, changed_by, notes, changed_at
-
-## Order Status Flow
+Simple clean architecture following catalog-service pattern:
 
 ```
-PENDING → PAYMENT_PROCESSING → PAID → PREPARING → SHIPPED → DELIVERED
-    ↓              ↓              ↓         ↓
-CANCELLED      CANCELLED      CANCELLED  CANCELLED
+order-service/
+├── cmd/server/main.go              # Entry point
+├── internal/
+│   ├── config/                     # Configuration
+│   ├── domain/                     # Domain entities (Order, OrderItem)
+│   ├── repository/                 # PostgreSQL storage
+│   ├── service/                    # Business logic
+│   └── handler/http/               # HTTP endpoints
 ```
 
-## REST API Endpoints
+## API Endpoints
 
+```http
+GET    /health                         # Health check
+GET    /ready                          # Readiness check
+POST   /api/v1/orders                  # Create order
+GET    /api/v1/orders                  # List all orders (paginated)
+GET    /api/v1/orders/:id              # Get order by ID
+PATCH  /api/v1/orders/:id/status       # Update order status
+POST   /api/v1/orders/:id/cancel       # Cancel order
+GET    /api/v1/users/:userId/orders    # Get user's orders (paginated)
 ```
-POST   /api/v1/orders             # Create order from cart
-GET    /api/v1/orders             # List user orders
-GET    /api/v1/orders/:id         # Get order details
-POST   /api/v1/orders/:id/cancel  # Cancel order
-GET    /api/v1/orders/:id/tracking # Get tracking info
+
+## Order Statuses
+
+- `pending` - Order created, awaiting confirmation
+- `confirmed` - Order confirmed
+- `processing` - Order being processed
+- `shipped` - Order shipped
+- `delivered` - Order delivered
+- `cancelled` - Order cancelled
+
+## Quick Start
+
+```bash
+# Start with Docker
+docker-compose up -d
+
+# Or run locally
+cp .env.example .env
+go run cmd/server/main.go
 ```
 
-## Saga Orchestration
+## Testing
 
-1. Order Service creates order (status: PENDING)
-2. Publishes: `order.created`
-3. Payment Service processes payment
-4. Inventory Service reserves stock
-5. Order Service updates status based on events
-6. Notification Service sends confirmation
+```bash
+# Create order
+curl -X POST http://localhost:8084/api/v1/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "123e4567-e89b-12d3-a456-426614174000",
+    "items": [
+      {
+        "book_id": "456e7890-e89b-12d3-a456-426614174000",
+        "quantity": 2,
+        "unit_price": 29.99
+      }
+    ],
+    "shipping_address": "123 Main St, City, Country",
+    "payment_method": "credit_card"
+  }'
 
-## Events Published
+# Get order
+curl http://localhost:8084/api/v1/orders/{order_id}
 
-- `order.created`
-- `order.confirmed`
-- `order.cancelled`
-- `order.shipped`
-- `order.delivered`
+# List all orders (paginated)
+curl http://localhost:8084/api/v1/orders?page=1&page_size=20
 
-## Events Consumed
+# Get user orders
+curl http://localhost:8084/api/v1/users/{user_id}/orders?page=1&page_size=10
 
-- `payment.completed`
-- `payment.failed`
-- `inventory.reserved`
-- `inventory.reservation_failed`
+# Update order status
+curl -X PATCH http://localhost:8084/api/v1/orders/{order_id}/status \
+  -H "Content-Type: application/json" \
+  -d '{"status": "confirmed"}'
 
-## Next Steps
+# Cancel order
+curl -X POST http://localhost:8084/api/v1/orders/{order_id}/cancel
+```
 
-- [ ] Implement order models
-- [ ] Create saga orchestrator
-- [ ] Implement event publishers/consumers
-- [ ] Add compensating transactions
-- [ ] Write comprehensive tests
+## Features
+
+✅ PostgreSQL storage with GORM  
+✅ Order lifecycle management  
+✅ Status transitions with validation  
+✅ User order history  
+✅ Pagination support  
+✅ Automatic total calculation  
+✅ Health & readiness checks
+
+## Configuration
+
+Key environment variables:
+
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=order_db
+DEFAULT_PAGE_SIZE=20           # Default pagination size
+MAX_PAGE_SIZE=100              # Maximum items per page
+```
+
+---
+
+**Simple, working, following catalog-service pattern** ✅
