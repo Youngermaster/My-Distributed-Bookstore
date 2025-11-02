@@ -269,3 +269,77 @@ func (r *RoleRepository) GetAll() ([]domain.Role, error) {
 	err := r.db.Find(&roles).Error
 	return roles, err
 }
+
+// WishlistRepository handles database operations for wishlists
+type WishlistRepository struct {
+	db *gorm.DB
+}
+
+// NewWishlistRepository creates a new wishlist repository
+func NewWishlistRepository(db *gorm.DB) *WishlistRepository {
+	return &WishlistRepository{db: db}
+}
+
+// Add adds a book to user's wishlist
+func (r *WishlistRepository) Add(userID, bookID uuid.UUID) (*domain.Wishlist, error) {
+	// Check if already exists
+	var existing domain.Wishlist
+	err := r.db.Where("user_id = ? AND book_id = ?", userID, bookID).First(&existing).Error
+	if err == nil {
+		// Already in wishlist
+		return &existing, nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+
+	// Create new wishlist item
+	wishlist := &domain.Wishlist{
+		UserID: userID,
+		BookID: bookID,
+	}
+
+	if err := r.db.Create(wishlist).Error; err != nil {
+		return nil, err
+	}
+
+	return wishlist, nil
+}
+
+// Remove removes a book from user's wishlist
+func (r *WishlistRepository) Remove(userID, bookID uuid.UUID) error {
+	result := r.db.Where("user_id = ? AND book_id = ?", userID, bookID).Delete(&domain.Wishlist{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("wishlist item not found")
+	}
+	return nil
+}
+
+// GetByUserID retrieves all wishlist items for a user
+func (r *WishlistRepository) GetByUserID(userID uuid.UUID) ([]domain.Wishlist, error) {
+	var wishlists []domain.Wishlist
+	err := r.db.Where("user_id = ?", userID).Order("created_at DESC").Find(&wishlists).Error
+	return wishlists, err
+}
+
+// Exists checks if a book is in user's wishlist
+func (r *WishlistRepository) Exists(userID, bookID uuid.UUID) (bool, error) {
+	var count int64
+	err := r.db.Model(&domain.Wishlist{}).Where("user_id = ? AND book_id = ?", userID, bookID).Count(&count).Error
+	return count > 0, err
+}
+
+// Clear removes all items from user's wishlist
+func (r *WishlistRepository) Clear(userID uuid.UUID) error {
+	return r.db.Where("user_id = ?", userID).Delete(&domain.Wishlist{}).Error
+}
+
+// GetBookIDs retrieves all book IDs in user's wishlist
+func (r *WishlistRepository) GetBookIDs(userID uuid.UUID) ([]uuid.UUID, error) {
+	var bookIDs []uuid.UUID
+	err := r.db.Model(&domain.Wishlist{}).Where("user_id = ?", userID).Pluck("book_id", &bookIDs).Error
+	return bookIDs, err
+}

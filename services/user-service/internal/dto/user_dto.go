@@ -102,3 +102,35 @@ type SuccessResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 }
+
+// WishlistRequest represents a request to add a book to wishlist
+type WishlistRequest struct {
+	BookID uuid.UUID `json:"book_id" validate:"required"`
+}
+
+// WishlistResponse represents a wishlist item in API responses
+type WishlistResponse struct {
+	ID        uuid.UUID `json:"id"`
+	UserID    uuid.UUID `json:"user_id"`
+	BookID    uuid.UUID `json:"book_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// WishlistWithBookResponse represents a wishlist item with book details
+type WishlistWithBookResponse struct {
+	ID        uuid.UUID              `json:"id"`
+	UserID    uuid.UUID              `json:"user_id"`
+	BookID    uuid.UUID              `json:"book_id"`
+	Book      *BookSummary           `json:"book,omitempty"` // Will be populated by calling catalog service
+	CreatedAt time.Time              `json:"created_at"`
+}
+
+// BookSummary represents basic book information from catalog service
+type BookSummary struct {
+	ID            uuid.UUID `json:"id"`
+	ISBN          string    `json:"isbn"`
+	Title         string    `json:"title"`
+	Price         float64   `json:"price"`
+	CoverImageURL string    `json:"cover_image_url"`
+	Authors       []string  `json:"authors,omitempty"`
+}

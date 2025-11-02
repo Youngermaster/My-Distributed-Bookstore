@@ -1,0 +1,123 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "github.com/youngermaster/distributed-bookstore/user-service/proto";
+
+import "google/protobuf/timestamp.proto";
+
+// UserService provides user-related gRPC methods for inter-service communication
+service UserService {
+  // Validate a JWT token and return user claims
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+
+  // Get user profile by ID
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+
+  // Get multiple users by IDs
+  rpc GetUsersByIds(GetUsersByIdsRequest) returns (GetUsersByIdsResponse);
+
+  // Check if user has a specific role
+  rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
+
+  // Get user's wishlist book IDs
+  rpc GetUserWishlist(GetUserWishlistRequest) returns (GetUserWishlistResponse);
+
+  // Check if a book is in user's wishlist
+  rpc IsInWishlist(IsInWishlistRequest) returns (IsInWishlistResponse);
+}
+
+// Token validation
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message ValidateTokenResponse {
+  bool valid = 1;
+  string user_id = 2;
+  string email = 3;
+  repeated string roles = 4;
+  string error = 5;
+}
+
+// Get user
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message GetUserResponse {
+  string id = 1;
+  string email = 2;
+  string full_name = 3;
+  string phone = 4;
+  repeated Role roles = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+  google.protobuf.Timestamp last_login_at = 8;
+}
+
+// Get multiple users
+message GetUsersByIdsRequest {
+  repeated string user_ids = 1;
+}
+
+message GetUsersByIdsResponse {
+  repeated UserSummary users = 1;
+}
+
+message UserSummary {
+  string id = 1;
+  string email = 2;
+  string full_name = 3;
+}
+
+// Check permission
+message CheckPermissionRequest {
+  string user_id = 1;
+  string resource = 2;
+  string action = 3;
+}
+
+message CheckPermissionResponse {
+  bool allowed = 1;
+  repeated string roles = 2;
+}
+
+// Wishlist operations
+message GetUserWishlistRequest {
+  string user_id = 1;
+}
+
+message GetUserWishlistResponse {
+  repeated string book_ids = 1;
+}
+
+message IsInWishlistRequest {
+  string user_id = 1;
+  string book_id = 2;
+}
+
+message IsInWishlistResponse {
+  bool exists = 1;
+}
+
+// Common types
+message Role {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+}
+
+message Address {
+  string id = 1;
+  string user_id = 2;
+  string address_line1 = 3;
+  string address_line2 = 4;
+  string city = 5;
+  string state = 6;
+  string postal_code = 7;
+  string country = 8;
+  bool is_default = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}

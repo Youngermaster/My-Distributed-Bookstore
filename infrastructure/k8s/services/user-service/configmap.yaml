@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-service-config
+  namespace: production
+data:
+  jwt-access-duration: "24h"
+  jwt-refresh-duration: "168h"
+  bcrypt-cost: "12"
+  cors-allow-origins: "http://localhost:3000,https://bookstore.example.com"
+  db-max-idle-conns: "10"
+  db-max-open-conns: "100"

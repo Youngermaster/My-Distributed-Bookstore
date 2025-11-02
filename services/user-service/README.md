@@ -11,8 +11,10 @@ A production-ready user authentication and authorization service built with Go +
 - ✅ **Password Hashing** with bcrypt
 - ✅ **User Profile Management**
 - ✅ **Address Management** (shipping/billing)
+- ✅ **Wishlist/Bookmarking** (save favorite books)
 - ✅ **Role-Based Access Control (RBAC)**
 - ✅ **Session Management**
+- ✅ **Logout Functionality**
 - ✅ **Automatic Database Migrations**
 - ✅ **Docker Support** with docker-compose
 - ✅ **Input Validation**
@@ -36,8 +38,10 @@ A production-ready user authentication and authorization service built with Go +
 - JWT token generation and validation
 - User profile management
 - Address management (shipping/billing)
+- Wishlist management (bookmark books)
 - Role-based access control (RBAC)
 - Session management
+- Logout and token invalidation
 - Password reset functionality
 
 ## Database Schema
@@ -47,22 +51,27 @@ A production-ready user authentication and authorization service built with Go +
 **user_roles**: user_id, role_id
 **addresses**: id, user_id, address_line1, address_line2, city, state, postal_code, country, is_default
 **sessions**: id, user_id, token_hash, ip_address, user_agent, expires_at, created_at
+**wishlists**: id, user_id, book_id, created_at
 
 ## REST API Endpoints
 
 ```
 POST   /api/v1/auth/register      # User registration
 POST   /api/v1/auth/login         # Login (returns JWT)
-POST   /api/v1/auth/logout        # Logout
+POST   /api/v1/auth/logout        # Logout (invalidate sessions)
 POST   /api/v1/auth/refresh       # Refresh JWT token
-POST   /api/v1/auth/forgot-password
-POST   /api/v1/auth/reset-password
 GET    /api/v1/users/me           # Get current user profile
 PUT    /api/v1/users/me           # Update profile
+POST   /api/v1/users/me/password  # Change password
 GET    /api/v1/users/me/addresses # List addresses
 POST   /api/v1/users/me/addresses # Add address
 PUT    /api/v1/users/me/addresses/:id
 DELETE /api/v1/users/me/addresses/:id
+GET    /api/v1/users/me/wishlist  # Get wishlist
+POST   /api/v1/users/me/wishlist  # Add book to wishlist
+DELETE /api/v1/users/me/wishlist/:bookId  # Remove from wishlist
+DELETE /api/v1/users/me/wishlist  # Clear entire wishlist
+GET    /api/v1/users/me/wishlist/check/:bookId  # Check if in wishlist
 ```
 
 ## gRPC Methods
@@ -124,13 +133,14 @@ docker-compose up postgres -d
 go run cmd/server/main.go
 ```
 
-## 📡 API Endpoints (13 total)
+## 📡 API Endpoints (19 total)
 
 ### Authentication (Public)
 
 ```http
 POST   /api/v1/auth/register      # Register new user
 POST   /api/v1/auth/login         # Login (returns JWT tokens)
+POST   /api/v1/auth/logout        # Logout (invalidate user sessions)
 POST   /api/v1/auth/refresh       # Refresh access token
 ```
 
@@ -149,6 +159,16 @@ GET    /api/v1/users/me/addresses       # List all addresses
 POST   /api/v1/users/me/addresses       # Create new address
 PUT    /api/v1/users/me/addresses/:id   # Update address
 DELETE /api/v1/users/me/addresses/:id   # Delete address
+```
+
+### Wishlist (Protected - Requires JWT)
+
+```http
+GET    /api/v1/users/me/wishlist              # Get all wishlist items
+POST   /api/v1/users/me/wishlist              # Add book to wishlist
+DELETE /api/v1/users/me/wishlist/:bookId      # Remove book from wishlist
+DELETE /api/v1/users/me/wishlist              # Clear entire wishlist
+GET    /api/v1/users/me/wishlist/check/:bookId  # Check if book in wishlist
 ```
 
 ### System
@@ -179,7 +199,8 @@ user-service/
 │   │   └── user_repository.go     # ✅ GORM repositories
 │   └── service/
 │       ├── auth_service.go        # ✅ Auth business logic
-│       └── user_service.go        # ✅ User management logic
+│       ├── user_service.go        # ✅ User management logic
+│       └── wishlist_service.go    # ✅ Wishlist business logic
 ├── pkg/
 │   ├── jwt/
 │   │   └── jwt.go                 # ✅ JWT token utilities
@@ -258,6 +279,24 @@ curl -X POST http://localhost:8082/api/v1/users/me/addresses \
   }'
 ```
 
+### 5. Add book to wishlist
+
+```bash
+curl -X POST http://localhost:8082/api/v1/users/me/wishlist \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "book_id": "book-uuid-here"
+  }'
+```
+
+### 6. Get wishlist
+
+```bash
+curl -X GET http://localhost:8082/api/v1/users/me/wishlist \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
 ## 📊 Database Schema
 
 Automatically created via GORM AutoMigrate:
@@ -267,6 +306,7 @@ Automatically created via GORM AutoMigrate:
 - **user_roles**: Many-to-many relationship
 - **addresses**: Shipping/billing addresses
 - **sessions**: Active user sessions
+- **wishlists**: User bookmarked books (user_id, book_id)
 
 ### Default Roles
 
