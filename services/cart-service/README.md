@@ -1,83 +1,101 @@
 # Cart Service
 
-## Overview
-
-Manages shopping cart functionality with session-based carts for anonymous users and persistent carts for authenticated users.
+Simple shopping cart service for the distributed bookstore.
 
 ## Technology Stack
 
 - **Language**: Go 1.21+
 - **Framework**: Fiber v2
-- **Storage**: Redis (primary), PostgreSQL (backup)
-- **Ports**: HTTP: 8083, gRPC: 50053
+- **Storage**: Redis (in-memory key-value store)
+- **Port**: 8083
 
-## Responsibilities
+## Architecture
 
-- Shopping cart management
-- Session-based cart for anonymous users
-- Persistent cart for authenticated users
-- Cart synchronization (anonymous → authenticated)
-- Real-time price calculation
-- Cart item validation
-
-## Data Model (Redis)
-
-```json
-{
-  "cart:{user_id}": {
-    "items": [
-      {
-        "book_id": "uuid",
-        "quantity": 2,
-        "unit_price": 29.99,
-        "added_at": "timestamp"
-      }
-    ],
-    "total": 59.98,
-    "updated_at": "timestamp"
-  }
-}
-```
-
-## REST API Endpoints
+Simple clean architecture following catalog-service pattern:
 
 ```
-GET    /api/v1/cart               # Get current cart
-POST   /api/v1/cart/items         # Add item to cart
-PUT    /api/v1/cart/items/:bookId # Update quantity
-DELETE /api/v1/cart/items/:bookId # Remove from cart
-DELETE /api/v1/cart               # Clear cart
-POST   /api/v1/cart/sync          # Sync anonymous cart to user cart
+cart-service/
+├── cmd/server/main.go              # Entry point
+├── internal/
+│   ├── config/                     # Configuration
+│   ├── domain/                     # Domain entities (Cart, CartItem)
+│   ├── repository/                 # Redis storage
+│   ├── service/                    # Business logic
+│   └── handler/http/               # HTTP endpoints
 ```
 
-## gRPC Methods
+## API Endpoints
 
-```protobuf
-rpc GetCart(GetCartRequest) returns (GetCartResponse);
-rpc AddItem(AddItemRequest) returns (CartResponse);
-rpc ClearCart(ClearCartRequest) returns (ClearCartResponse);
+```http
+GET    /health                        # Health check
+GET    /ready                         # Readiness check
+GET    /api/v1/cart/:cartId           # Get cart
+POST   /api/v1/cart/:cartId/items     # Add item
+PUT    /api/v1/cart/:cartId/items/:bookId   # Update quantity
+DELETE /api/v1/cart/:cartId/items/:bookId   # Remove item
+DELETE /api/v1/cart/:cartId           # Clear cart
 ```
 
-## Events Consumed
-
-- `catalog.price_updated` - Update cart prices
-- `catalog.stock_updated` - Validate cart availability
-
-## Environment Variables
+## Quick Start
 
 ```bash
-HTTP_PORT=8083
-GRPC_PORT=50053
-REDIS_URL=redis:6379
-CATALOG_SERVICE_URL=catalog-service:50051
-CART_TTL=7d  # Cart expiration for anonymous users
+# Start with Docker
+docker-compose up -d
+
+# Or run locally
+cp .env.example .env
+go run cmd/server/main.go
 ```
 
-## Next Steps
+## Testing
 
-- [ ] Implement Redis operations
-- [ ] Create cart handlers
-- [ ] Integrate with Catalog Service via gRPC
-- [ ] Add cart validation logic
-- [ ] Implement cart synchronization
-- [ ] Add tests
+```bash
+# Create a new cart (use any UUID)
+CART_ID=$(uuidgen)
+
+# Get cart
+curl http://localhost:8083/api/v1/cart/$CART_ID
+
+# Add item
+curl -X POST http://localhost:8083/api/v1/cart/$CART_ID/items \
+  -H "Content-Type: application/json" \
+  -d '{
+    "book_id":"123e4567-e89b-12d3-a456-426614174000",
+    "quantity":2,
+    "price":29.99
+  }'
+
+# Update quantity
+curl -X PUT http://localhost:8083/api/v1/cart/$CART_ID/items/123e4567-e89b-12d3-a456-426614174000 \
+  -H "Content-Type: application/json" \
+  -d '{"quantity":3}'
+
+# Remove item
+curl -X DELETE http://localhost:8083/api/v1/cart/$CART_ID/items/123e4567-e89b-12d3-a456-426614174000
+
+# Clear cart
+curl -X DELETE http://localhost:8083/api/v1/cart/$CART_ID
+```
+
+## Features
+
+✅ Redis-only storage (simple & fast)  
+✅ UUID-based cart IDs  
+✅ Automatic TTL (7 days default)  
+✅ Quantity & item limits  
+✅ Real-time total calculation  
+✅ Health & readiness checks
+
+## Configuration
+
+Key environment variables:
+
+```env
+CART_TTL_HOURS=168           # Cart expiration (7 days)
+MAX_ITEMS_PER_CART=50        # Maximum items per cart
+MAX_QUANTITY_PER_ITEM=99     # Maximum quantity per item
+```
+
+---
+
+**Simple, working, following catalog-service pattern** ✅

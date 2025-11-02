@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { booksAPI, wishlistAPI } from "@/lib/api";
+import { booksAPI, wishlistAPI, cartAPI } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
+import { useCartStore } from "@/store/cartStore";
+import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,17 +13,26 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Heart } from "lucide-react";
+import { Heart, ShoppingCart } from "lucide-react";
 
 export default function BookDetail() {
   const { id } = useParams({ from: "/books/$id" });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuthStore();
+  const { cartId, setCartId } = useCartStore();
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
+
+  // Initialize cart ID if not exists
+  useEffect(() => {
+    if (!cartId) {
+      const newCartId = uuidv4();
+      setCartId(newCartId);
+    }
+  }, [cartId, setCartId]);
 
   const { data: bookData, isLoading } = useQuery({
     queryKey: ["book", id],
@@ -44,6 +55,25 @@ export default function BookDetail() {
     },
   });
 
+  const addToCartMutation = useMutation({
+    mutationFn: ({ bookId, price }: { bookId: string; price: number }) =>
+      cartAPI.addItem(cartId!, {
+        book_id: bookId,
+        quantity: 1,
+        price,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cart", cartId] });
+      setMessage({ type: "success", text: "Added to cart!" });
+      setTimeout(() => setMessage(null), 3000);
+    },
+    onError: (error: any) => {
+      const errorMsg = error.response?.data?.message || "Failed to add to cart";
+      setMessage({ type: "error", text: errorMsg });
+      setTimeout(() => setMessage(null), 3000);
+    },
+  });
+
   const handleAddToWishlist = () => {
     if (!isAuthenticated) {
       navigate({ to: "/login" });
@@ -51,6 +81,12 @@ export default function BookDetail() {
     }
     if (id) {
       addToWishlistMutation.mutate(id);
+    }
+  };
+
+  const handleAddToCart = () => {
+    if (id && bookData) {
+      addToCartMutation.mutate({ bookId: id, price: bookData.price });
     }
   };
 
@@ -168,6 +204,20 @@ export default function BookDetail() {
                 </div>
 
                 <div className="flex gap-2">
+                  <Button
+                    onClick={handleAddToCart}
+                    disabled={
+                      book.stock_quantity === 0 || addToCartMutation.isPending
+                    }
+                    className="flex-1"
+                  >
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    {addToCartMutation.isPending
+                      ? "Adding..."
+                      : book.stock_quantity === 0
+                      ? "Out of Stock"
+                      : "Add to Cart"}
+                  </Button>
                   <Button
                     onClick={handleAddToWishlist}
                     variant="outline"
