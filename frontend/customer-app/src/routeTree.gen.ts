@@ -15,6 +15,10 @@ import { Route as GenresSlugImport } from "./routes/genres.$slug";
 import { Route as BooksIdImport } from "./routes/books.$id";
 import { Route as AuthorsIdImport } from "./routes/authors.$id";
 import { Route as AdminBooksImport } from "./routes/admin.books";
+import { Route as CartImport } from "./routes/cart";
+import { Route as CheckoutImport } from "./routes/checkout";
+import { Route as OrdersImport } from "./routes/orders";
+import { Route as OrdersOrderIdImport } from "./routes/orders.$orderId";
 
 // Create/Update Routes
 
@@ -78,6 +82,30 @@ const AdminBooksRoute = AdminBooksImport.update({
   getParentRoute: () => rootRoute,
 } as any);
 
+const CartRoute = CartImport.update({
+  id: "/cart",
+  path: "/cart",
+  getParentRoute: () => rootRoute,
+} as any);
+
+const CheckoutRoute = CheckoutImport.update({
+  id: "/checkout",
+  path: "/checkout",
+  getParentRoute: () => rootRoute,
+} as any);
+
+const OrdersRoute = OrdersImport.update({
+  id: "/orders",
+  path: "/orders",
+  getParentRoute: () => rootRoute,
+} as any);
+
+const OrdersOrderIdRoute = OrdersOrderIdImport.update({
+  id: "/orders/$orderId",
+  path: "/orders/$orderId",
+  getParentRoute: () => rootRoute,
+} as any);
+
 // Populate the FileRoutesByPath interface
 
 declare module "@tanstack/react-router" {
@@ -124,6 +152,34 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof WishlistImport;
       parentRoute: typeof rootRoute;
     };
+    "/cart": {
+      id: "/cart";
+      path: "/cart";
+      fullPath: "/cart";
+      preLoaderRoute: typeof CartImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/checkout": {
+      id: "/checkout";
+      path: "/checkout";
+      fullPath: "/checkout";
+      preLoaderRoute: typeof CheckoutImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/orders": {
+      id: "/orders";
+      path: "/orders";
+      fullPath: "/orders";
+      preLoaderRoute: typeof OrdersImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/orders/$orderId": {
+      id: "/orders/$orderId";
+      path: "/orders/$orderId";
+      fullPath: "/orders/$orderId";
+      preLoaderRoute: typeof OrdersOrderIdImport;
+      parentRoute: typeof rootRoute;
+    };
     "/admin/books": {
       id: "/admin/books";
       path: "/admin/books";
@@ -164,6 +220,10 @@ export interface FileRoutesByFullPath {
   "/login": typeof LoginRoute;
   "/register": typeof RegisterRoute;
   "/wishlist": typeof WishlistRoute;
+  "/cart": typeof CartRoute;
+  "/checkout": typeof CheckoutRoute;
+  "/orders": typeof OrdersRoute;
+  "/orders/$orderId": typeof OrdersOrderIdRoute;
   "/admin/books": typeof AdminBooksRoute;
   "/authors/$id": typeof AuthorsIdRoute;
   "/books/$id": typeof BooksIdRoute;
@@ -177,6 +237,10 @@ export interface FileRoutesByTo {
   "/login": typeof LoginRoute;
   "/register": typeof RegisterRoute;
   "/wishlist": typeof WishlistRoute;
+  "/cart": typeof CartRoute;
+  "/checkout": typeof CheckoutRoute;
+  "/orders": typeof OrdersRoute;
+  "/orders/$orderId": typeof OrdersOrderIdRoute;
   "/admin/books": typeof AdminBooksRoute;
   "/authors/$id": typeof AuthorsIdRoute;
   "/books/$id": typeof BooksIdRoute;
@@ -191,6 +255,10 @@ export interface FileRoutesById {
   "/login": typeof LoginRoute;
   "/register": typeof RegisterRoute;
   "/wishlist": typeof WishlistRoute;
+  "/cart": typeof CartRoute;
+  "/checkout": typeof CheckoutRoute;
+  "/orders": typeof OrdersRoute;
+  "/orders/$orderId": typeof OrdersOrderIdRoute;
   "/admin/books": typeof AdminBooksRoute;
   "/authors/$id": typeof AuthorsIdRoute;
   "/books/$id": typeof BooksIdRoute;
@@ -206,6 +274,10 @@ export interface FileRouteTypes {
     | "/login"
     | "/register"
     | "/wishlist"
+    | "/cart"
+    | "/checkout"
+    | "/orders"
+    | "/orders/$orderId"
     | "/admin/books"
     | "/authors/$id"
     | "/books/$id"
@@ -218,6 +290,10 @@ export interface FileRouteTypes {
     | "/login"
     | "/register"
     | "/wishlist"
+    | "/cart"
+    | "/checkout"
+    | "/orders"
+    | "/orders/$orderId"
     | "/admin/books"
     | "/authors/$id"
     | "/books/$id"
@@ -230,6 +306,10 @@ export interface FileRouteTypes {
     | "/login"
     | "/register"
     | "/wishlist"
+    | "/cart"
+    | "/checkout"
+    | "/orders"
+    | "/orders/$orderId"
     | "/admin/books"
     | "/authors/$id"
     | "/books/$id"
@@ -244,6 +324,10 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute;
   RegisterRoute: typeof RegisterRoute;
   WishlistRoute: typeof WishlistRoute;
+  CartRoute: typeof CartRoute;
+  CheckoutRoute: typeof CheckoutRoute;
+  OrdersRoute: typeof OrdersRoute;
+  OrdersOrderIdRoute: typeof OrdersOrderIdRoute;
   AdminBooksRoute: typeof AdminBooksRoute;
   AuthorsIdRoute: typeof AuthorsIdRoute;
   BooksIdRoute: typeof BooksIdRoute;
@@ -257,6 +341,10 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   WishlistRoute: WishlistRoute,
+  CartRoute: CartRoute,
+  CheckoutRoute: CheckoutRoute,
+  OrdersRoute: OrdersRoute,
+  OrdersOrderIdRoute: OrdersOrderIdRoute,
   AdminBooksRoute: AdminBooksRoute,
   AuthorsIdRoute: AuthorsIdRoute,
   BooksIdRoute: BooksIdRoute,
@@ -279,6 +367,10 @@ export const routeTree = rootRoute
         "/login",
         "/register",
         "/wishlist",
+        "/cart",
+        "/checkout",
+        "/orders",
+        "/orders/$orderId",
         "/admin/books",
         "/authors/$id",
         "/books/$id",
@@ -302,6 +394,18 @@ export const routeTree = rootRoute
     },
     "/wishlist": {
       "filePath": "wishlist.tsx"
+    },
+    "/cart": {
+      "filePath": "cart.tsx"
+    },
+    "/checkout": {
+      "filePath": "checkout.tsx"
+    },
+    "/orders": {
+      "filePath": "orders.tsx"
+    },
+    "/orders/$orderId": {
+      "filePath": "orders.$orderId.tsx"
     },
     "/admin/books": {
       "filePath": "admin.books.tsx"

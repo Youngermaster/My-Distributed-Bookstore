@@ -2,123 +2,56 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: user-service
-  namespace: production
+  namespace: bookstore-dev
   labels:
     app: user-service
-    version: v1
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: user-service
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   template:
     metadata:
       labels:
         app: user-service
-        version: v1
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8082"
-        prometheus.io/path: "/metrics"
     spec:
-      serviceAccountName: user-service-sa
-
-      # Anti-affinity for high availability
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchLabels:
-                  app: user-service
-              topologyKey: kubernetes.io/hostname
-
       containers:
       - name: user-service
         image: user-service:latest
-        imagePullPolicy: Always
-
+        imagePullPolicy: Never
         ports:
         - name: http
           containerPort: 8082
           protocol: TCP
-        - name: grpc
-          containerPort: 50052
-          protocol: TCP
-
         env:
-        - name: HTTP_PORT
-          value: "8082"
-        - name: GRPC_PORT
-          value: "50052"
-        - name: ENV
-          value: "production"
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
               name: user-service-secrets
-              key: database-url
+              key: DATABASE_URL
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
-              name: user-service-secrets
-              key: jwt-secret
-        - name: JWT_ACCESS_DURATION
-          valueFrom:
-            configMapKeyRef:
-              name: user-service-config
-              key: jwt-access-duration
-        - name: JWT_REFRESH_DURATION
-          valueFrom:
-            configMapKeyRef:
-              name: user-service-config
-              key: jwt-refresh-duration
-        - name: BCRYPT_COST
-          valueFrom:
-            configMapKeyRef:
-              name: user-service-config
-              key: bcrypt-cost
-        - name: CORS_ALLOW_ORIGINS
-          valueFrom:
-            configMapKeyRef:
-              name: user-service-config
-              key: cors-allow-origins
-        - name: DB_MAX_IDLE_CONNS
-          valueFrom:
-            configMapKeyRef:
-              name: user-service-config
-              key: db-max-idle-conns
-        - name: DB_MAX_OPEN_CONNS
-          valueFrom:
-            configMapKeyRef:
-              name: user-service-config
-              key: db-max-open-conns
-        - name: LOG_LEVEL
-          value: "info"
-
+              name: jwt-secret
+              key: JWT_SECRET
+        envFrom:
+        - configMapRef:
+            name: user-service-config
         resources:
           requests:
             cpu: 100m
             memory: 128Mi
           limits:
-            cpu: 500m
-            memory: 512Mi
-
+            cpu: 300m
+            memory: 256Mi
         livenessProbe:
           httpGet:
             path: /health
             port: 8082
-          initialDelaySeconds: 30
+          initialDelaySeconds: 20
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
-
         readinessProbe:
           httpGet:
             path: /health
@@ -127,20 +60,3 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
-
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 1001
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          capabilities:
-            drop:
-            - ALL
-
-        volumeMounts:
-        - name: tmp
-          mountPath: /tmp
-
-      volumes:
-      - name: tmp
-        emptyDir: {}

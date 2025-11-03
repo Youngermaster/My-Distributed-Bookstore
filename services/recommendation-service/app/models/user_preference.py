@@ -40,7 +40,7 @@ class UserPreference(Base):
     excluded_genres = Column(ARRAY(String), nullable=True)
 
     # Additional preferences as JSON string
-    metadata = Column(Text, nullable=True)
+    extra_data = Column(Text, nullable=True)
 
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)

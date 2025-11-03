@@ -19,6 +19,14 @@ import type {
   UpdateOrderStatusRequest,
   OrderListResponse,
 } from "@/types/order";
+import type {
+  RecommendationResponse,
+  InteractionRequest,
+  InteractionResponse,
+  TrendingBooksParams,
+  PopularBooksParams,
+  SimilarBooksParams,
+} from "@/types/recommendation";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080",
@@ -51,7 +59,7 @@ api.interceptors.response.use(
       if (refreshToken) {
         try {
           const { data } = await axios.post<RefreshTokenResponse>(
-            "http://localhost:8082/api/v1/auth/refresh",
+            `${api.defaults.baseURL}/api/v1/users/auth/refresh`,
             { refresh_token: refreshToken }
           );
 
@@ -72,15 +80,20 @@ api.interceptors.response.use(
   }
 );
 
-// Auth API
+// Auth API (through API Gateway -> User Service)
 export const authAPI = {
   login: (data: LoginRequest) =>
-    api.post<AuthResponse>("/api/v1/auth/login", data),
+    api.post<AuthResponse>("/api/v1/users/auth/login", data),
 
   register: (data: RegisterRequest) =>
-    api.post<AuthResponse>("/api/v1/auth/register", data),
+    api.post<AuthResponse>("/api/v1/users/auth/register", data),
 
-  logout: () => api.post("/api/v1/auth/logout"),
+  logout: () => api.post("/api/v1/users/auth/logout"),
+
+  refresh: (refresh_token: string) =>
+    api.post<RefreshTokenResponse>("/api/v1/users/auth/refresh", {
+      refresh_token,
+    }),
 
   me: () => api.get<{ data: User }>("/api/v1/users/me"),
 };
@@ -136,7 +149,7 @@ export const publishersAPI = {
   get: (id: string) => api.get(`/api/v1/catalog/publishers/${id}`),
 };
 
-// Wishlist API
+// Wishlist API (through API Gateway -> User Service)
 export const wishlistAPI = {
   list: () => api.get<WishlistResponse>("/api/v1/users/me/wishlist"),
 
@@ -145,6 +158,13 @@ export const wishlistAPI = {
 
   remove: (book_id: string) =>
     api.delete(`/api/v1/users/me/wishlist/${book_id}`),
+
+  clear: () => api.delete("/api/v1/users/me/wishlist"),
+
+  check: (book_id: string) =>
+    api.get<{ in_wishlist: boolean }>(
+      `/api/v1/users/me/wishlist/check/${book_id}`
+    ),
 };
 
 // Cart API (through API Gateway -> Cart Service)
@@ -161,15 +181,12 @@ export const cartAPI = {
     api.delete<Cart>(`/api/v1/cart/${cartId}/items/${bookId}`),
 
   clear: (cartId: string) =>
-    api.delete<{ success: boolean; message: string }>(
-      `/api/v1/cart/${cartId}`
-    ),
+    api.delete<{ success: boolean; message: string }>(`/api/v1/cart/${cartId}`),
 };
 
 // Order API (through API Gateway -> Order Service)
 export const orderAPI = {
-  create: (data: CreateOrderRequest) =>
-    api.post<Order>("/api/v1/orders", data),
+  create: (data: CreateOrderRequest) => api.post<Order>("/api/v1/orders", data),
 
   get: (id: string) => api.get<Order>(`/api/v1/orders/${id}`),
 
@@ -190,6 +207,31 @@ export const orderAPI = {
     api.post<{ success: boolean; message: string }>(
       `/api/v1/orders/${id}/cancel`
     ),
+};
+
+// Recommendations API (through API Gateway -> Recommendation Service)
+export const recommendationsAPI = {
+  getPersonalized: (params?: { limit?: number }) =>
+    api.get<RecommendationResponse>("/api/v1/recommendations/me", { params }),
+
+  getSimilar: (bookId: string, params?: SimilarBooksParams) =>
+    api.get<RecommendationResponse>(
+      `/api/v1/recommendations/similar/${bookId}`,
+      { params }
+    ),
+
+  getTrending: (params?: TrendingBooksParams) =>
+    api.get<RecommendationResponse>("/api/v1/recommendations/trending", {
+      params,
+    }),
+
+  getPopular: (params?: PopularBooksParams) =>
+    api.get<RecommendationResponse>("/api/v1/recommendations/popular", {
+      params,
+    }),
+
+  trackInteraction: (data: InteractionRequest) =>
+    api.post<InteractionResponse>("/api/v1/recommendations/interactions", data),
 };
 
 export default api;

@@ -35,7 +35,7 @@ class UserInteraction(Base):
     score = Column(Float, nullable=False, default=1.0)
 
     # Metadata (optional JSON field for additional data)
-    metadata = Column(String, nullable=True)
+    extra_data = Column(String, nullable=True)
 
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 

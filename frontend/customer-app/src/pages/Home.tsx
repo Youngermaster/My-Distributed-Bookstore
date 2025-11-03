@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { booksAPI, categoriesAPI } from "@/lib/api";
+import { booksAPI, categoriesAPI, recommendationsAPI } from "@/lib/api";
 import { useNavigate } from "@tanstack/react-router";
 import BookGrid from "@/components/BookGrid";
 import GenreCard from "@/components/GenreCard";
@@ -7,10 +7,12 @@ import SearchBar from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { type Book } from "@/types/book";
+import { useAuthStore } from "@/store/authStore";
 
 export default function Home() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const { isAuthenticated } = useAuthStore();
 
   // Fetch featured books (first 10)
   const { data: booksData, isLoading: booksLoading } = useQuery({
@@ -19,6 +21,90 @@ export default function Home() {
       const response = await booksAPI.list({ page: 1, page_size: 10 });
       return response.data;
     },
+  });
+
+  // Fetch personalized recommendations (only for authenticated users)
+  const { data: recommendationsData } = useQuery({
+    queryKey: ["recommendations", "personalized"],
+    queryFn: async () => {
+      const response = await recommendationsAPI.getPersonalized({ limit: 10 });
+      return response.data;
+    },
+    enabled: isAuthenticated,
+  });
+
+  // Fetch trending books
+  const { data: trendingData } = useQuery({
+    queryKey: ["recommendations", "trending"],
+    queryFn: async () => {
+      const response = await recommendationsAPI.getTrending({
+        limit: 10,
+        days: 7,
+      });
+      return response.data;
+    },
+  });
+
+  // Fetch popular books
+  const { data: popularData } = useQuery({
+    queryKey: ["recommendations", "popular"],
+    queryFn: async () => {
+      const response = await recommendationsAPI.getPopular({ limit: 10 });
+      return response.data;
+    },
+  });
+
+  // Helper function to fetch books by IDs
+  const fetchBooksByIds = async (bookIds: string[]): Promise<Book[]> => {
+    const bookPromises = bookIds.map((id) =>
+      booksAPI.get(id).then((res) => res.data)
+    );
+    const books = await Promise.all(bookPromises);
+    return books.filter((book): book is Book => book !== null);
+  };
+
+  // Fetch full book details for recommendations
+  const { data: recommendedBooks, isLoading: recommendedBooksLoading } =
+    useQuery({
+      queryKey: [
+        "books",
+        "recommended",
+        recommendationsData?.recommendations.map((r) => r.book_id),
+      ],
+      queryFn: () =>
+        fetchBooksByIds(
+          recommendationsData?.recommendations.map((r) => r.book_id) || []
+        ),
+      enabled:
+        isAuthenticated &&
+        !!recommendationsData &&
+        recommendationsData.recommendations.length > 0,
+    });
+
+  // Fetch full book details for trending books
+  const { data: trendingBooks, isLoading: trendingBooksLoading } = useQuery({
+    queryKey: [
+      "books",
+      "trending",
+      trendingData?.recommendations.map((r) => r.book_id),
+    ],
+    queryFn: () =>
+      fetchBooksByIds(
+        trendingData?.recommendations.map((r) => r.book_id) || []
+      ),
+    enabled: !!trendingData && trendingData.recommendations.length > 0,
+  });
+
+  // Fetch full book details for popular books
+  const { data: popularBooks, isLoading: popularBooksLoading } = useQuery({
+    queryKey: [
+      "books",
+      "popular",
+      popularData?.recommendations.map((r) => r.book_id),
+    ],
+    queryFn: () =>
+      fetchBooksByIds(popularData?.recommendations.map((r) => r.book_id) || []),
+    enabled: !!popularData && popularData.recommendations.length > 0,
   });
 
   // Fetch all categories
@@ -95,6 +181,57 @@ export default function Home() {
             onBookClick={handleBookClick}
           />
         </section>
+
+        {/* Personalized Recommendations - Only show for authenticated users when not searching */}
+        {!searchQuery &&
+          isAuthenticated &&
+          recommendedBooks &&
+          recommendedBooks.length > 0 && (
+            <section className="mb-16">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-3xl font-bold text-foreground">
+                  Recommended for You
+                </h2>
+              </div>
+              <BookGrid
+                books={recommendedBooks}
+                isLoading={recommendedBooksLoading}
+                onBookClick={handleBookClick}
+              />
+            </section>
+          )}
+
+        {/* Trending Books - Only show when not searching */}
+        {!searchQuery && trendingBooks && trendingBooks.length > 0 && (
+          <section className="mb-16">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-3xl font-bold text-foreground">
+                Trending This Week
+              </h2>
+            </div>
+            <BookGrid
+              books={trendingBooks}
+              isLoading={trendingBooksLoading}
+              onBookClick={handleBookClick}
+            />
+          </section>
+        )}
+
+        {/* Popular Books - Only show when not searching */}
+        {!searchQuery && popularBooks && popularBooks.length > 0 && (
+          <section className="mb-16">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-3xl font-bold text-foreground">
+                Most Popular
+              </h2>
+            </div>
+            <BookGrid
+              books={popularBooks}
+              isLoading={popularBooksLoading}
+              onBookClick={handleBookClick}
+            />
+          </section>
+        )}
 
         {/* Categories Section - Only show when not searching */}
         {!searchQuery && (
