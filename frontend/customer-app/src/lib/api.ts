@@ -27,6 +27,17 @@ import type {
   PopularBooksParams,
   SimilarBooksParams,
 } from "@/types/recommendation";
+import type {
+  DashboardStats,
+  SalesAnalytics,
+  InventoryReport,
+  UserGrowthReport,
+  SalesAnalyticsParams,
+  InventoryReportParams,
+  UserGrowthParams,
+  TopBooksParams,
+  TopBook,
+} from "@/types/admin";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080",
@@ -232,6 +243,38 @@ export const recommendationsAPI = {
 
   trackInteraction: (data: InteractionRequest) =>
     api.post<InteractionResponse>("/api/v1/recommendations/interactions", data),
+};
+
+// Admin API (through API Gateway -> Admin Service)
+export const adminAPI = {
+  getDashboard: () =>
+    api.get<{ success: boolean; data: DashboardStats }>(
+      "/api/v1/admin/dashboard"
+    ),
+
+  getSalesAnalytics: (params?: SalesAnalyticsParams) =>
+    api.get<{ success: boolean; data: SalesAnalytics }>(
+      "/api/v1/admin/analytics/sales",
+      { params }
+    ),
+
+  getInventoryReport: (params?: InventoryReportParams) =>
+    api.get<{ success: boolean; data: InventoryReport }>(
+      "/api/v1/admin/analytics/inventory",
+      { params }
+    ),
+
+  getUserGrowth: (params?: UserGrowthParams) =>
+    api.get<{ success: boolean; data: UserGrowthReport }>(
+      "/api/v1/admin/analytics/users",
+      { params }
+    ),
+
+  getTopBooks: (params?: TopBooksParams) =>
+    api.get<{ success: boolean; data: { books: TopBook[] } }>(
+      "/api/v1/admin/top-books",
+      { params }
+    ),
 };
 
 export default api;
