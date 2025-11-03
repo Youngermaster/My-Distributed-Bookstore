@@ -1,14 +1,13 @@
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { v4 as uuidv4 } from "uuid";
+import { createId } from "@/lib/id";
 import { cartAPI, booksAPI } from "@/lib/api";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -16,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Trash2, Plus, Minus, ShoppingCart } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 export default function Cart() {
   const navigate = useNavigate();
@@ -27,7 +26,7 @@ export default function Cart() {
   // Initialize cart ID if not exists
   useEffect(() => {
     if (!cartId) {
-      const newCartId = uuidv4();
+      const newCartId = createId();
       setCartId(newCartId);
     }
   }, [cartId, setCartId]);
@@ -76,7 +75,11 @@ export default function Cart() {
     },
   });
 
-  const handleQuantityChange = (bookId: string, currentQty: number, delta: number) => {
+  const handleQuantityChange = (
+    bookId: string,
+    currentQty: number,
+    delta: number
+  ) => {
     const newQty = currentQty + delta;
     if (newQty < 1) {
       removeItemMutation.mutate({ bookId });
@@ -114,7 +117,9 @@ export default function Cart() {
           <p className="text-muted-foreground">
             {isEmpty
               ? "Your cart is empty"
-              : `${cart.item_count} ${cart.item_count === 1 ? "item" : "items"} in your cart`}
+              : `${cart.item_count} ${
+                  cart.item_count === 1 ? "item" : "items"
+                } in your cart`}
           </p>
         </div>
 
@@ -141,7 +146,9 @@ export default function Cart() {
                   onQuantityChange={(delta) =>
                     handleQuantityChange(item.book_id, item.quantity, delta)
                   }
-                  onRemove={() => removeItemMutation.mutate({ bookId: item.book_id })}
+                  onRemove={() =>
+                    removeItemMutation.mutate({ bookId: item.book_id })
+                  }
                 />
               ))}
 
@@ -170,7 +177,9 @@ export default function Cart() {
                 <CardContent className="space-y-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium">${cart.total.toFixed(2)}</span>
+                    <span className="font-medium">
+                      ${cart.total.toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Shipping</span>
@@ -271,9 +280,7 @@ function CartItemCard({ item, onQuantityChange, onRemove }: CartItemCardProps) {
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
-            <p className="text-lg font-semibold">
-              ${item.subtotal.toFixed(2)}
-            </p>
+            <p className="text-lg font-semibold">${item.subtotal.toFixed(2)}</p>
           </div>
         </div>
       </CardContent>

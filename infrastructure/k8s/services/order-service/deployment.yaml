@@ -2,113 +2,51 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: order-service
-  namespace: production
+  namespace: bookstore-dev
   labels:
     app: order-service
-    version: v1
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: order-service
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   template:
     metadata:
       labels:
         app: order-service
-        version: v1
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8084"
-        prometheus.io/path: "/metrics"
     spec:
-      serviceAccountName: order-service-sa
-
-      # Anti-affinity for high availability
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchLabels:
-                  app: order-service
-              topologyKey: kubernetes.io/hostname
-
       containers:
       - name: order-service
         image: order-service:latest
-        imagePullPolicy: Always
-
+        imagePullPolicy: Never
         ports:
         - name: http
           containerPort: 8084
           protocol: TCP
-        - name: grpc
-          containerPort: 50054
-          protocol: TCP
-
+        envFrom:
+        - configMapRef:
+            name: order-service-config
         env:
-        - name: HTTP_PORT
-          value: "8084"
-        - name: GRPC_PORT
-          value: "50054"
-        - name: ENV
-          value: "production"
-        - name: DATABASE_URL
+        - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: order-service-secrets
-              key: database-url
-        - name: CATALOG_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: order-service-config
-              key: catalog-service-url
-        - name: USER_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: order-service-config
-              key: user-service-url
-        - name: PAYMENT_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: order-service-config
-              key: payment-service-url
-        - name: INVENTORY_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: order-service-config
-              key: inventory-service-url
-        - name: RABBITMQ_URL
-          valueFrom:
-            secretKeyRef:
-              name: order-service-secrets
-              key: rabbitmq-url
-        - name: LOG_LEVEL
-          value: "info"
-
+              name: postgres-credentials
+              key: POSTGRES_PASSWORD
         resources:
           requests:
             cpu: 100m
             memory: 128Mi
           limits:
-            cpu: 500m
-            memory: 512Mi
-
+            cpu: 300m
+            memory: 256Mi
         livenessProbe:
           httpGet:
             path: /health
             port: 8084
-          initialDelaySeconds: 30
+          initialDelaySeconds: 20
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
-
         readinessProbe:
           httpGet:
             path: /ready
@@ -117,20 +55,3 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
-
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 1001
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          capabilities:
-            drop:
-            - ALL
-
-        volumeMounts:
-        - name: tmp
-          mountPath: /tmp
-
-      volumes:
-      - name: tmp
-        emptyDir: {}

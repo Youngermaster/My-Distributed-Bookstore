@@ -2,9 +2,15 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: order-service-config
-  namespace: production
+  namespace: bookstore-dev
 data:
-  catalog-service-url: "catalog-service.production.svc.cluster.local:50051"
-  user-service-url: "user-service.production.svc.cluster.local:50052"
-  payment-service-url: "payment-service.production.svc.cluster.local:50055"
-  inventory-service-url: "inventory-service.production.svc.cluster.local:50056"
+  HTTP_PORT: "8084"
+  ENV: "development"
+  DB_HOST: "postgres"
+  DB_PORT: "5432"
+  DB_USER: "bookstore"
+  DB_NAME: "catalog_db"
+  DB_SSLMODE: "disable"
+  DEFAULT_PAGE_SIZE: "20"
+  MAX_PAGE_SIZE: "100"
+  LOG_LEVEL: "debug"

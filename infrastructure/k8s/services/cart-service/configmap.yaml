@@ -2,7 +2,15 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: cart-service-config
-  namespace: production
+  namespace: bookstore-dev
 data:
-  catalog-service-url: "catalog-service.production.svc.cluster.local:50051"
-  cart-ttl: "86400" # 24 hours in seconds
+  HTTP_PORT: "8083"
+  ENV: "development"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: ""
+  REDIS_DB: "0"
+  CART_TTL_HOURS: "168"
+  MAX_ITEMS_PER_CART: "50"
+  MAX_QUANTITY_PER_ITEM: "99"
+  LOG_LEVEL: "debug"

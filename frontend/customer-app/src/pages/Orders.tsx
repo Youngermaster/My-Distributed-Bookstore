@@ -24,7 +24,9 @@ export default function Orders() {
     queryKey: ["orders", user?.id, page],
     queryFn: () =>
       user
-        ? orderAPI.getUserOrders(user.id, page, pageSize).then((res) => res.data)
+        ? orderAPI
+            .getUserOrders(user.id, page, pageSize)
+            .then((res) => res.data)
         : Promise.resolve(null),
     enabled: !!user,
   });
@@ -65,7 +67,9 @@ export default function Orders() {
           <p className="text-muted-foreground">
             {isEmpty
               ? "You haven't placed any orders yet"
-              : `${ordersData?.total || 0} total ${ordersData?.total === 1 ? "order" : "orders"}`}
+              : `${ordersData?.total || 0} total ${
+                  ordersData?.total === 1 ? "order" : "orders"
+                }`}
           </p>
         </div>
 
@@ -94,11 +98,14 @@ export default function Orders() {
                         </CardTitle>
                         <CardDescription>
                           Placed on{" "}
-                          {new Date(order.created_at).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
+                          {new Date(order.created_at).toLocaleDateString(
+                            "en-US",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            }
+                          )}
                         </CardDescription>
                       </div>
                       <OrderStatusBadge status={order.status} />
@@ -108,14 +115,18 @@ export default function Orders() {
                     <div className="flex justify-between items-center">
                       <div className="space-y-1">
                         <p className="text-sm text-muted-foreground">
-                          {order.item_count} {order.item_count === 1 ? "item" : "items"}
+                          {order.item_count}{" "}
+                          {order.item_count === 1 ? "item" : "items"}
                         </p>
                         <p className="text-lg font-bold">
                           ${order.total_amount.toFixed(2)}
                         </p>
                       </div>
                       <Button variant="outline" asChild>
-                        <Link to={`/orders/${order.id}`}>
+                        <Link
+                          to="/orders/$orderId"
+                          params={{ orderId: order.id }}
+                        >
                           View Details
                           <ChevronRight className="w-4 h-4 ml-2" />
                         </Link>
@@ -158,7 +169,10 @@ export default function Orders() {
 function OrderStatusBadge({ status }: { status: OrderStatus }) {
   const statusConfig: Record<
     OrderStatus,
-    { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
+    {
+      label: string;
+      variant: "default" | "secondary" | "destructive" | "outline";
+    }
   > = {
     pending: { label: "Pending", variant: "outline" },
     confirmed: { label: "Confirmed", variant: "secondary" },

@@ -2,119 +2,43 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: recommendation-service
-  namespace: production
+  namespace: bookstore-dev
   labels:
     app: recommendation-service
-    version: v1
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: recommendation-service
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   template:
     metadata:
       labels:
         app: recommendation-service
-        version: v1
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8089"
-        prometheus.io/path: "/metrics"
     spec:
-      serviceAccountName: recommendation-service-sa
-      
-      # Anti-affinity to spread pods across nodes
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchLabels:
-                  app: recommendation-service
-              topologyKey: kubernetes.io/hostname
-      
       containers:
       - name: recommendation-service
         image: recommendation-service:latest
-        imagePullPolicy: Always
-        
+        imagePullPolicy: Never
         ports:
         - name: http
           containerPort: 8089
           protocol: TCP
-        - name: grpc
-          containerPort: 50059
-          protocol: TCP
-        
+        envFrom:
+        - configMapRef:
+            name: recommendation-service-config
         env:
-        - name: APP_NAME
-          value: "Recommendation Service"
-        - name: APP_VERSION
-          value: "1.0.0"
-        - name: DEBUG
-          value: "False"
-        - name: PORT
-          value: "8089"
-        - name: GRPC_PORT
-          value: "50059"
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
               name: recommendation-service-secrets
-              key: database-url
-        - name: REDIS_URL
-          valueFrom:
-            configMapKeyRef:
-              name: recommendation-service-config
-              key: redis-url
-        - name: CATALOG_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: recommendation-service-config
-              key: catalog-service-url
-        - name: USER_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: recommendation-service-config
-              key: user-service-url
-        - name: ORDER_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: recommendation-service-config
-              key: order-service-url
-        - name: JAEGER_AGENT_HOST
-          value: "jaeger-agent.observability.svc.cluster.local"
-        - name: JAEGER_AGENT_PORT
-          value: "6831"
-        - name: LOG_LEVEL
-          value: "INFO"
-        - name: CACHE_TTL
-          value: "3600"
-        - name: DEFAULT_RECOMMENDATIONS_COUNT
-          value: "10"
-        - name: MIN_INTERACTIONS_FOR_COLLABORATIVE
-          value: "3"
-        - name: TAG_WEIGHT
-          value: "0.4"
-        - name: COLLABORATIVE_WEIGHT
-          value: "0.4"
-        - name: POPULAR_WEIGHT
-          value: "0.2"
-        
+              key: DATABASE_URL
         resources:
           requests:
-            cpu: 200m
+            cpu: 150m
             memory: 256Mi
           limits:
-            cpu: 1000m
-            memory: 1Gi
-        
+            cpu: 400m
+            memory: 512Mi
         livenessProbe:
           httpGet:
             path: /api/v1/health
@@ -123,24 +47,11 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
-        
         readinessProbe:
           httpGet:
             path: /api/v1/ready
             port: 8089
-          initialDelaySeconds: 5
+          initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
-        
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 1000
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: false
-          capabilities:
-            drop:
-            - ALL
-      
-      imagePullSecrets:
-      - name: ecr-registry-secret

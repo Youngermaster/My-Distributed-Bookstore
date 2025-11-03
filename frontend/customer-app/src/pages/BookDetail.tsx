@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { booksAPI, wishlistAPI, cartAPI } from "@/lib/api";
+import { booksAPI, wishlistAPI, cartAPI, recommendationsAPI } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/cartStore";
-import { v4 as uuidv4 } from "uuid";
+import { createId } from "@/lib/id";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,6 +14,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Heart, ShoppingCart } from "lucide-react";
+import BookGrid from "@/components/BookGrid";
+import { type Book } from "@/types/book";
 
 export default function BookDetail() {
   const { id } = useParams({ from: "/books/$id" });
@@ -29,10 +31,24 @@ export default function BookDetail() {
   // Initialize cart ID if not exists
   useEffect(() => {
     if (!cartId) {
-      const newCartId = uuidv4();
+      const newCartId = createId();
       setCartId(newCartId);
     }
   }, [cartId, setCartId]);
+
+  // Track book view when component mounts
+  useEffect(() => {
+    if (id && isAuthenticated) {
+      recommendationsAPI
+        .trackInteraction({
+          book_id: id,
+          interaction_type: "view",
+        })
+        .catch((error) => {
+          console.error("Failed to track view:", error);
+        });
+    }
+  }, [id, isAuthenticated]);
 
   const { data: bookData, isLoading } = useQuery({
     queryKey: ["book", id],
@@ -40,12 +56,55 @@ export default function BookDetail() {
     enabled: !!id,
   });
 
+  // Fetch similar books
+  const { data: similarBooksData, isLoading: similarBooksLoading } = useQuery({
+    queryKey: ["recommendations", "similar", id],
+    queryFn: () =>
+      recommendationsAPI.getSimilar(id!, { limit: 6 }).then((res) => res.data),
+    enabled: !!id,
+  });
+
+  // Helper function to fetch books by IDs
+  const fetchBooksByIds = async (bookIds: string[]): Promise<Book[]> => {
+    const bookPromises = bookIds.map((bookId) =>
+      booksAPI.get(bookId).then((res) => res.data)
+    );
+    const books = await Promise.all(bookPromises);
+    return books.filter((book): book is Book => book !== null);
+  };
+
+  // Fetch full book details for similar books
+  const { data: similarBooks } = useQuery({
+    queryKey: [
+      "books",
+      "similar",
+      similarBooksData?.recommendations.map((r) => r.book_id),
+    ],
+    queryFn: () =>
+      fetchBooksByIds(
+        similarBooksData?.recommendations.map((r) => r.book_id) || []
+      ),
+    enabled: !!similarBooksData && similarBooksData.recommendations.length > 0,
+  });
+
   const addToWishlistMutation = useMutation({
     mutationFn: (bookId: string) => wishlistAPI.add(bookId),
-    onSuccess: () => {
+    onSuccess: (_, bookId) => {
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
       setMessage({ type: "success", text: "Added to wishlist!" });
       setTimeout(() => setMessage(null), 3000);
+
+      // Track wishlist interaction
+      if (isAuthenticated) {
+        recommendationsAPI
+          .trackInteraction({
+            book_id: bookId,
+            interaction_type: "wishlist",
+          })
+          .catch((error) => {
+            console.error("Failed to track wishlist interaction:", error);
+          });
+      }
     },
     onError: (error: any) => {
       const errorMsg =
@@ -62,10 +121,22 @@ export default function BookDetail() {
         quantity: 1,
         price,
       }),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["cart", cartId] });
       setMessage({ type: "success", text: "Added to cart!" });
       setTimeout(() => setMessage(null), 3000);
+
+      // Track add to cart interaction
+      if (isAuthenticated) {
+        recommendationsAPI
+          .trackInteraction({
+            book_id: variables.bookId,
+            interaction_type: "add_to_cart",
+          })
+          .catch((error) => {
+            console.error("Failed to track cart interaction:", error);
+          });
+      }
     },
     onError: (error: any) => {
       const errorMsg = error.response?.data?.message || "Failed to add to cart";
@@ -294,6 +365,22 @@ export default function BookDetail() {
             </Card>
           </div>
         </div>
+
+        {/* Similar Books Section */}
+        {similarBooks && similarBooks.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-6">
+              Similar Books You Might Like
+            </h2>
+            <BookGrid
+              books={similarBooks}
+              isLoading={similarBooksLoading}
+              onBookClick={(book) =>
+                navigate({ to: "/books/$id", params: { id: book.id } })
+              }
+            />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -11,23 +11,22 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Package } from "lucide-react";
-import { toast } from "sonner";
+import { ArrowLeft } from "lucide-react";
+import { toast } from "@/lib/toast";
 import type { OrderStatus } from "@/types/order";
 
 export default function OrderDetail() {
-  const { orderId } = useParams({ strict: false });
+  const { orderId } = useParams({ from: "/orders/$orderId" });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderId],
-    queryFn: () => orderAPI.get(orderId!).then((res) => res.data),
-    enabled: !!orderId,
+    queryFn: () => orderAPI.get(orderId).then((res) => res.data),
   });
 
   const cancelOrderMutation = useMutation({
-    mutationFn: () => orderAPI.cancel(orderId!),
+    mutationFn: () => orderAPI.cancel(orderId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -101,7 +100,9 @@ export default function OrderDetail() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {order.shipping_address && (
                 <div>
-                  <h4 className="font-semibold text-sm mb-1">Shipping Address</h4>
+                  <h4 className="font-semibold text-sm mb-1">
+                    Shipping Address
+                  </h4>
                   <p className="text-sm text-muted-foreground">
                     {order.shipping_address}
                   </p>
@@ -131,7 +132,9 @@ export default function OrderDetail() {
                   onClick={() => cancelOrderMutation.mutate()}
                   disabled={cancelOrderMutation.isPending}
                 >
-                  {cancelOrderMutation.isPending ? "Cancelling..." : "Cancel Order"}
+                  {cancelOrderMutation.isPending
+                    ? "Cancelling..."
+                    : "Cancel Order"}
                 </Button>
               </>
             )}
@@ -171,7 +174,10 @@ export default function OrderDetail() {
 function OrderStatusBadge({ status }: { status: OrderStatus }) {
   const statusConfig: Record<
     OrderStatus,
-    { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
+    {
+      label: string;
+      variant: "default" | "secondary" | "destructive" | "outline";
+    }
   > = {
     pending: { label: "Pending", variant: "outline" },
     confirmed: { label: "Confirmed", variant: "secondary" },

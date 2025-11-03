@@ -33,7 +33,7 @@ class RecommendationCache(Base):
     score = Column(Float, nullable=False, default=0.0)
 
     # Optional metadata about the recommendations
-    metadata = Column(Text, nullable=True)
+    extra_data = Column(Text, nullable=True)
 
     # Cache expiration
     expires_at = Column(DateTime, nullable=False)
