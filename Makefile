@@ -46,13 +46,13 @@ proto-gen: ## Generate protobuf code
 		       --go-grpc_out=. --go-grpc_opt=paths=source_relative \
 		       $$proto 2>/dev/null || echo "Go protoc not installed or failed for $$proto"; \
 	done
-	@echo "✅ Protobuf code generation complete"
+	@echo "Protobuf code generation complete"
 
 # Start all services
 services-start: ## Start all services
 	@echo "Starting all services..."
 	docker-compose up -d
-	@echo "✅ All services started"
+	@echo "All services started"
 	@echo "API Gateway: http://localhost:8080"
 	@echo "Jaeger UI: http://localhost:16686"
 	@echo "RabbitMQ Management: http://localhost:15672"
@@ -61,7 +61,7 @@ services-start: ## Start all services
 services-stop: ## Stop all services
 	@echo "Stopping all services..."
 	docker-compose down
-	@echo "✅ All services stopped"
+	@echo "All services stopped"
 
 # View logs
 logs: ## View logs from all services
@@ -71,14 +71,14 @@ logs: ## View logs from all services
 docker-build: ## Build all Docker images
 	@echo "Building all Docker images..."
 	docker-compose build
-	@echo "✅ All images built"
+	@echo "All images built"
 
 # Clean Docker resources
 docker-clean: ## Clean Docker resources
 	@echo "Cleaning Docker resources..."
 	docker-compose down -v
 	docker system prune -f
-	@echo "✅ Docker resources cleaned"
+	@echo "Docker resources cleaned"
 
 # Run database migrations
 migrate-up: ## Run database migrations
@@ -92,7 +92,7 @@ migrate-down: ## Rollback database migrations
 
 # Run all tests
 test: test-go test-node test-python ## Run all tests
-	@echo "✅ All tests complete"
+	@echo "All tests complete"
 
 # Run Go service tests
 test-go: ## Run Go service tests
@@ -104,7 +104,7 @@ test-go: ## Run Go service tests
 			cd ../..; \
 		fi \
 	done
-	@echo "✅ Go tests complete"
+	@echo "Go tests complete"
 
 # Run Node.js service tests
 test-node: ## Run Node.js service tests
@@ -116,7 +116,7 @@ test-node: ## Run Node.js service tests
 			cd ../..; \
 		fi \
 	done
-	@echo "✅ Node.js tests complete"
+	@echo "Node.js tests complete"
 
 # Run Python service tests
 test-python: ## Run Python service tests
@@ -128,7 +128,7 @@ test-python: ## Run Python service tests
 			cd ../..; \
 		fi \
 	done
-	@echo "✅ Python tests complete"
+	@echo "Python tests complete"
 
 # Run linters
 lint: ## Run linters
@@ -139,13 +139,13 @@ lint: ## Run linters
 k8s-deploy: ## Deploy to Kubernetes
 	@echo "Deploying to Kubernetes..."
 	kubectl apply -f infrastructure/k8s/ --recursive
-	@echo "✅ Kubernetes deployment complete"
+	@echo "Kubernetes deployment complete"
 
 # Delete from Kubernetes
 k8s-delete: ## Delete from Kubernetes
 	@echo "Deleting from Kubernetes..."
 	kubectl delete -f infrastructure/k8s/ --recursive
-	@echo "✅ Kubernetes resources deleted"
+	@echo "Kubernetes resources deleted"
 
 # Check Kubernetes status
 k8s-status: ## Check Kubernetes deployment status
@@ -160,4 +160,4 @@ clean: ## Clean all build artifacts
 	find . -type d -name "build" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name "bin" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	@echo "✅ Build artifacts cleaned"
+	@echo "Build artifacts cleaned"

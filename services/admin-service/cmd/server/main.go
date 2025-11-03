@@ -3,125 +3,136 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
+	"time"
 
+	"github.com/Youngermaster/My-Distributed-Bookstore/admin-service/internal/config"
+	"github.com/Youngermaster/My-Distributed-Bookstore/admin-service/internal/grpc"
+	"github.com/Youngermaster/My-Distributed-Bookstore/admin-service/internal/handler"
+	"github.com/Youngermaster/My-Distributed-Bookstore/admin-service/internal/middleware"
+	"github.com/Youngermaster/My-Distributed-Bookstore/admin-service/internal/repository"
+	"github.com/Youngermaster/My-Distributed-Bookstore/admin-service/internal/service"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 func main() {
-	// Create Fiber app
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	// Initialize database
+	db, err := initDatabase(cfg.DatabaseURL, cfg.DBMaxIdleConns, cfg.DBMaxOpenConns)
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+
+	log.Println("Database connected successfully")
+
+	// Initialize service clients
+	clients := grpc.NewServiceClients(
+		cfg.UserServiceURL,
+		cfg.CatalogServiceURL,
+		cfg.OrderServiceURL,
+		cfg.CartServiceURL,
+		cfg.InventoryServiceURL,
+		cfg.RecommendationServiceURL,
+	)
+
+	log.Println("Service clients initialized")
+
+	// Initialize repository
+	adminRepo := repository.NewAdminRepository(db)
+
+	// Initialize services
+	analyticsService := service.NewAnalyticsService(adminRepo, clients)
+
+	// Initialize handlers
+	analyticsHandler := handler.NewAnalyticsHandler(analyticsService)
+	healthHandler := handler.NewHealthHandler(db)
+
+	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
-		AppName:      "admin-service",
-		ErrorHandler: customErrorHandler,
+		AppName: "Admin Service",
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			code := fiber.StatusInternalServerError
+			if e, ok := err.(*fiber.Error); ok {
+				code = e.Code
+			}
+			return c.Status(code).JSON(fiber.Map{
+				"success": false,
+				"error":   err.Error(),
+			})
+		},
 	})
 
 	// Global middleware
 	app.Use(recover.New())
 	app.Use(logger.New(logger.Config{
-		Format: "[]  -   - \n",
+		Format:     "${time} | ${status} | ${latency} | ${method} ${path}\n",
+		TimeFormat: "2006-01-02 15:04:05",
 	}))
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
-		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
-		AllowHeaders: "Origin,Content-Type,Accept,Authorization",
+		AllowOrigins: cfg.CORSAllowOrigins,
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+		AllowMethods: "GET, POST, PUT, DELETE, OPTIONS",
 	}))
 
-	// Health check endpoint
-	app.Get("/health", healthCheckHandler)
-	app.Get("/ready", readinessHandler)
+	// Health check routes (no auth required)
+	app.Get("/health", healthHandler.Health)
+	app.Get("/ready", healthHandler.Ready)
 
-	// TODO: Initialize database connection
-	// TODO: Run database migrations
-	// TODO: Initialize Redis connection
-	// TODO: Initialize RabbitMQ connection
-	// TODO: Setup gRPC server
-	// TODO: Register HTTP routes
-	// TODO: Setup event consumers
-	// TODO: Initialize Jaeger tracer
-	// TODO: Setup Prometheus metrics
-
-	// API routes group
+	// API routes with authentication and admin authorization
 	api := app.Group("/api/v1")
 	
-	// TODO: Add route handlers here
-	_ = api // Remove this line when routes are added
+	// Apply auth middleware to all API routes
+	api.Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	api.Use(middleware.RequireAdmin())
 
-	// Get port from environment or use default
-	httpPort := os.Getenv("HTTP_PORT")
-	if httpPort == "" {
-		httpPort = "8090"
-	}
+	// Analytics routes
+	admin := api.Group("/admin")
+	admin.Get("/dashboard", analyticsHandler.GetDashboard)
+	admin.Get("/analytics/sales", analyticsHandler.GetSalesAnalytics)
+	admin.Get("/analytics/inventory", analyticsHandler.GetInventoryReport)
+	admin.Get("/analytics/users", analyticsHandler.GetUserGrowth)
+	admin.Get("/top-books", analyticsHandler.GetTopSellingBooks)
 
-	// Start HTTP server in goroutine
-	go func() {
-		addr := fmt.Sprintf(":%s", httpPort)
-		log.Printf("admin-service HTTP server starting on %s", addr)
-		if err := app.Listen(addr); err != nil {
-			log.Fatalf("Failed to start HTTP server: %v", err)
-		}
-	}()
-
-	// TODO: Start gRPC server in separate goroutine
-
-	log.Printf("admin-service started successfully")
-	log.Printf("HTTP Port: %s", httpPort)
-	log.Printf("gRPC Port: 50060")
-
-	// Wait for interrupt signal for graceful shutdown
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-	<-quit
-
-	log.Println("Shutting down admin-service...")
-
-	// Graceful shutdown
-	if err := app.Shutdown(); err != nil {
-		log.Printf("Error during HTTP server shutdown: %v", err)
-	}
-
-	// TODO: Stop gRPC server
-	// TODO: Close database connections
-	// TODO: Close Redis connections
-	// TODO: Close RabbitMQ connections
-
-	log.Println("admin-service stopped gracefully")
-}
-
-func healthCheckHandler(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{
-		"status":  "ok",
-		"service": "admin-service",
-	})
-}
-
-func readinessHandler(c *fiber.Ctx) error {
-	// TODO: Check database connection
-	// TODO: Check Redis connection
-	// TODO: Check RabbitMQ connection
+	// Start server
+	port := fmt.Sprintf(":%s", cfg.HTTPPort)
+	log.Printf("Starting Admin Service on port %s", cfg.HTTPPort)
+	log.Printf("Environment: %s", cfg.Env)
+	log.Printf("CORS allowed origins: %s", cfg.CORSAllowOrigins)
 	
-	return c.JSON(fiber.Map{
-		"status": "ready",
-		"checks": fiber.Map{
-			"database": "ok",
-			"redis":    "ok",
-			"rabbitmq": "ok",
+	if err := app.Listen(port); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
+}
+
+func initDatabase(databaseURL string, maxIdleConns, maxOpenConns int) (*gorm.DB, error) {
+	db, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{
+		NowFunc: func() time.Time {
+			return time.Now().UTC()
 		},
 	})
-}
-
-func customErrorHandler(c *fiber.Ctx, err error) error {
-	code := fiber.StatusInternalServerError
-	if e, ok := err.(*fiber.Error); ok {
-		code = e.Code
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	return c.Status(code).JSON(fiber.Map{
-		"error": err.Error(),
-		"code":  code,
-	})
+	// Get generic database object sql.DB to set connection pool
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database instance: %w", err)
+	}
+
+	// Set connection pool settings
+	sqlDB.SetMaxIdleConns(maxIdleConns)
+	sqlDB.SetMaxOpenConns(maxOpenConns)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+
+	return db, nil
 }

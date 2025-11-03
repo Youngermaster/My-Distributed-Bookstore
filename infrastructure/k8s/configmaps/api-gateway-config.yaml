@@ -11,6 +11,7 @@ data:
   CART_SERVICE_URL: "http://cart-service:8083"
   ORDER_SERVICE_URL: "http://order-service:8084"
   RECOMMENDATION_SERVICE_URL: "http://recommendation-service:8089"
+  ADMIN_SERVICE_URL: "http://admin-service:8090"
   RATE_LIMIT_ENABLED: "true"
   RATE_LIMIT_MAX: "100"
   RATE_LIMIT_WINDOW: "1m"

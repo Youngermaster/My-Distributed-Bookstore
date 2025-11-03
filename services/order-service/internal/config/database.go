@@ -28,13 +28,13 @@ func InitDatabase(cfg *Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	log.Println("✅ Connected to PostgreSQL")
+	log.Println("Connected to PostgreSQL")
 	return db, nil
 }
 
 func AutoMigrate(db *gorm.DB) error {
 	// Import domain models here when created
 	// For now, we'll migrate in the service initialization
-	log.Println("✅ Database migrations completed")
+	log.Println("Database migrations completed")
 	return nil
 }

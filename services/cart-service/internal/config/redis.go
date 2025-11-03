@@ -21,6 +21,6 @@ func InitRedis(cfg *Config) (*redis.Client, error) {
 		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
 
-	log.Println("✅ Connected to Redis")
+	log.Println("Connected to Redis")
 	return client, nil
 }

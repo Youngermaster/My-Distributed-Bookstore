@@ -43,7 +43,7 @@ func main() {
 	if err := db.AutoMigrate(&domain.Order{}, &domain.OrderItem{}); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
-	log.Println("✅ Database migrations completed")
+	log.Println("Database migrations completed")
 
 	// Initialize repository
 	orderRepo := repository.NewOrderRepository(db)
@@ -99,7 +99,7 @@ func main() {
 		log.Printf("Error during HTTP server shutdown: %v", err)
 	}
 
-	log.Println("✅ order-service stopped gracefully")
+	log.Println("order-service stopped gracefully")
 }
 
 func customErrorHandler(c *fiber.Ctx, err error) error {

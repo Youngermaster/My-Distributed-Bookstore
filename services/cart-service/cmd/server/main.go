@@ -92,7 +92,7 @@ if err := app.Shutdown(); err != nil {
 log.Printf("Error during HTTP server shutdown: %v", err)
 }
 
-log.Println("✅ cart-service stopped gracefully")
+log.Println("cart-service stopped gracefully")
 }
 
 func customErrorHandler(c *fiber.Ctx, err error) error {

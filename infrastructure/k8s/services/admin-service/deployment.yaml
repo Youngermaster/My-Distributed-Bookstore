@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-service
+  namespace: bookstore-dev
+  labels:
+    app: admin-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admin-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: admin-service
+    spec:
+      containers:
+      - name: admin-service
+        image: admin-service:latest
+        imagePullPolicy: Never  # For local minikube development
+        ports:
+        - name: http
+          containerPort: 8090
+          protocol: TCP
+        env:
+        - name: HTTP_PORT
+          value: "8090"
+        - name: ENV
+          value: "development"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: admin-service-secrets
+              key: database-url
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: admin-service-secrets
+              key: jwt-secret
+        - name: USER_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: admin-service-config
+              key: user-service-url
+        - name: CATALOG_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: admin-service-config
+              key: catalog-service-url
+        - name: ORDER_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: admin-service-config
+              key: order-service-url
+        - name: CART_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: admin-service-config
+              key: cart-service-url
+        - name: INVENTORY_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: admin-service-config
+              key: inventory-service-url
+        - name: RECOMMENDATION_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: admin-service-config
+              key: recommendation-service-url
+        - name: CORS_ALLOW_ORIGINS
+          valueFrom:
+            configMapKeyRef:
+              name: admin-service-config
+              key: cors-allow-origins
+        - name: LOG_LEVEL
+          value: "info"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8090
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8090
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
