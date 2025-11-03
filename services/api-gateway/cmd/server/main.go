@@ -28,8 +28,12 @@ func main() {
 	// Initialize catalog service client
 	catalogClient := proxy.NewCatalogClient(cfg.CatalogServiceURL, cfg.RequestTimeout)
 
+	// Initialize recommendation service client
+	recommendationClient := proxy.NewRecommendationClient(cfg.RecommendationServiceURL, cfg.RequestTimeout)
+
 	// Initialize handlers
 	catalogHandler := handler.NewCatalogHandler(catalogClient)
+	recommendationHandler := handler.NewRecommendationHandler(recommendationClient)
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
@@ -59,8 +63,8 @@ func main() {
 	}
 
 	// Health check endpoints
-	app.Get("/health", createHealthCheckHandler(catalogClient))
-	app.Get("/ready", createReadinessHandler(catalogClient))
+	app.Get("/health", createHealthCheckHandler(catalogClient, recommendationClient))
+	app.Get("/ready", createReadinessHandler(catalogClient, recommendationClient))
 
 	// API routes
 	api := app.Group("/api/v1")
@@ -87,6 +91,13 @@ func main() {
 	// Publishers
 	catalog.All("/publishers*", catalogHandler.ProxyPublishers)
 
+	// Recommendation routes (proxy to recommendation-service)
+	recommendations := api.Group("/recommendations")
+	recommendations.Get("/me", recommendationHandler.GetMyRecommendations)
+	recommendations.Get("/similar/:bookId", recommendationHandler.GetSimilarBooks)
+	recommendations.Get("/trending", recommendationHandler.GetTrendingBooks)
+	recommendations.All("*", recommendationHandler.ProxyRecommendationRequest)
+
 	// Root endpoint
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
@@ -94,13 +105,16 @@ func main() {
 			"version": "1.0.0",
 			"status":  "running",
 			"endpoints": fiber.Map{
-				"health":     "/health",
-				"ready":      "/ready",
-				"catalog":    "/api/v1/catalog",
-				"books":      "/api/v1/catalog/books",
-				"authors":    "/api/v1/catalog/authors",
-				"categories": "/api/v1/catalog/categories",
-				"publishers": "/api/v1/catalog/publishers",
+				"health":           "/health",
+				"ready":            "/ready",
+				"catalog":          "/api/v1/catalog",
+				"books":            "/api/v1/catalog/books",
+				"authors":          "/api/v1/catalog/authors",
+				"categories":       "/api/v1/catalog/categories",
+				"publishers":       "/api/v1/catalog/publishers",
+				"recommendations":  "/api/v1/recommendations",
+				"my_recommendations": "/api/v1/recommendations/me",
+				"trending":         "/api/v1/recommendations/trending",
 			},
 		})
 	})
@@ -118,7 +132,9 @@ func main() {
 	log.Printf("📡 Server: http://localhost:%s", cfg.Port)
 	log.Printf("🏥 Health: http://localhost:%s/health", cfg.Port)
 	log.Printf("📚 Catalog: http://localhost:%s/api/v1/catalog", cfg.Port)
+	log.Printf("🎯 Recommendations: http://localhost:%s/api/v1/recommendations", cfg.Port)
 	log.Printf("🔗 Catalog Service: %s", cfg.CatalogServiceURL)
+	log.Printf("🔗 Recommendation Service: %s", cfg.RecommendationServiceURL)
 
 	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
@@ -133,7 +149,7 @@ func main() {
 	log.Println("✅ API Gateway stopped gracefully")
 }
 
-func createHealthCheckHandler(catalogClient *proxy.CatalogClient) fiber.Handler {
+func createHealthCheckHandler(catalogClient *proxy.CatalogClient, recommendationClient *proxy.RecommendationClient) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Check catalog service health
 		catalogHealthy := true
@@ -141,8 +157,14 @@ func createHealthCheckHandler(catalogClient *proxy.CatalogClient) fiber.Handler 
 			catalogHealthy = false
 		}
 
+		// Check recommendation service health
+		recommendationHealthy := true
+		if err := recommendationClient.HealthCheck(); err != nil {
+			recommendationHealthy = false
+		}
+
 		overallStatus := "ok"
-		if !catalogHealthy {
+		if !catalogHealthy || !recommendationHealthy {
 			overallStatus = "degraded"
 		}
 
@@ -153,17 +175,26 @@ func createHealthCheckHandler(catalogClient *proxy.CatalogClient) fiber.Handler 
 				"catalog": fiber.Map{
 					"healthy": catalogHealthy,
 				},
+				"recommendation": fiber.Map{
+					"healthy": recommendationHealthy,
+				},
 			},
 		})
 	}
 }
 
-func createReadinessHandler(catalogClient *proxy.CatalogClient) fiber.Handler {
+func createReadinessHandler(catalogClient *proxy.CatalogClient, recommendationClient *proxy.RecommendationClient) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Check if catalog service is reachable
 		catalogReady := true
 		if err := catalogClient.HealthCheck(); err != nil {
 			catalogReady = false
+		}
+
+		// Check if recommendation service is reachable
+		recommendationReady := true
+		if err := recommendationClient.HealthCheck(); err != nil {
+			recommendationReady = false
 		}
 
 		if !catalogReady {
@@ -173,10 +204,18 @@ func createReadinessHandler(catalogClient *proxy.CatalogClient) fiber.Handler {
 			})
 		}
 
+		if !recommendationReady {
+			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+				"status": "not ready",
+				"reason": "recommendation service is not available",
+			})
+		}
+
 		return c.JSON(fiber.Map{
 			"status": "ready",
 			"services": fiber.Map{
 				"catalog": "ready",
+				"recommendation": "ready",
 			},
 		})
 	}

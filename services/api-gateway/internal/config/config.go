@@ -13,7 +13,8 @@ type Config struct {
 	Env  string
 
 	// Service URLs
-	CatalogServiceURL string
+	CatalogServiceURL        string
+	RecommendationServiceURL string
 
 	// JWT
 	JWTSecret     string
@@ -43,7 +44,8 @@ func Load() (*Config, error) {
 		Env:  getEnv("ENV", "development"),
 
 		// Service URLs
-		CatalogServiceURL: getEnv("CATALOG_SERVICE_URL", "http://localhost:8081"),
+		CatalogServiceURL:        getEnv("CATALOG_SERVICE_URL", "http://localhost:8081"),
+		RecommendationServiceURL: getEnv("RECOMMENDATION_SERVICE_URL", "http://localhost:8089"),
 
 		// JWT
 		JWTSecret:     getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
@@ -75,6 +77,7 @@ func (c *Config) Print() {
 	fmt.Printf("Environment: %s\n", c.Env)
 	fmt.Printf("Port: %s\n", c.Port)
 	fmt.Printf("Catalog Service: %s\n", c.CatalogServiceURL)
+	fmt.Printf("Recommendation Service: %s\n", c.RecommendationServiceURL)
 	fmt.Printf("Rate Limiting: Enabled=%v, Max=%d, Window=%v\n", c.RateLimitEnabled, c.RateLimitMax, c.RateLimitWindow)
 	fmt.Printf("Request Timeout: %v\n", c.RequestTimeout)
 	fmt.Printf("CORS Origins: %s\n", c.AllowedOrigins)

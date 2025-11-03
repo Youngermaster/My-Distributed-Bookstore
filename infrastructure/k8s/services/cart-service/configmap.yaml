@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cart-service-config
+  namespace: production
+data:
+  catalog-service-url: "catalog-service.production.svc.cluster.local:50051"
+  cart-ttl: "86400" # 24 hours in seconds

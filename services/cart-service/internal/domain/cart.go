@@ -17,15 +17,6 @@ type Cart struct {
 	UpdatedAt time.Time   `json:"updated_at"`
 }
 
-// CartItem represents an item in the shopping cart
-type CartItem struct {
-	BookID    uuid.UUID `json:"book_id"`
-	Quantity  int       `json:"quantity"`
-	Price     float64   `json:"price"`
-	Subtotal  float64   `json:"subtotal"`
-	AddedAt   time.Time `json:"added_at"`
-}
-
 // CalculateTotals calculates the total and item count for the cart
 func (c *Cart) CalculateTotals() {
 	c.Total = 0
