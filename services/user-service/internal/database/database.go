@@ -51,6 +51,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&domain.Role{},
 		&domain.Address{},
 		&domain.Session{},
+		&domain.Wishlist{},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
