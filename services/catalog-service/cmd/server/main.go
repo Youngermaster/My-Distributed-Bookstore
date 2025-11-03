@@ -98,11 +98,11 @@ func main() {
 
 	// TODO: Start gRPC server in separate goroutine
 
-	log.Printf("✅ catalog-service started successfully")
-	log.Printf("📡 HTTP Server: http://localhost:%s", httpPort)
-	log.Printf("📡 gRPC Server: localhost:%s", cfg.GRPCPort)
-	log.Printf("🏥 Health Check: http://localhost:%s/health", httpPort)
-	log.Printf("📚 API Base: http://localhost:%s/api/v1", httpPort)
+	log.Printf("catalog-service started successfully")
+	log.Printf("HTTP Server: http://localhost:%s", httpPort)
+	log.Printf("gRPC Server: localhost:%s", cfg.GRPCPort)
+	log.Printf("Health Check: http://localhost:%s/health", httpPort)
+	log.Printf("API Base: http://localhost:%s/api/v1", httpPort)
 
 	// Wait for interrupt signal for graceful shutdown
 	quit := make(chan os.Signal, 1)
@@ -120,7 +120,7 @@ func main() {
 	// TODO: Close Redis connections
 	// TODO: Close RabbitMQ connections
 
-	log.Println("✅ catalog-service stopped gracefully")
+	log.Println("catalog-service stopped gracefully")
 }
 
 func createHealthCheckHandler(db interface{}) fiber.Handler {

@@ -122,7 +122,7 @@ func (s *catalogService) CreateBook(ctx context.Context, req CreateBookRequest) 
 		return nil, err
 	}
 
-	log.Printf("✅ Book created: %s (ID: %s)", book.Title, book.ID)
+	log.Printf("Book created: %s (ID: %s)", book.Title, book.ID)
 	return book, nil
 }
 
@@ -215,7 +215,7 @@ func (s *catalogService) UpdateBook(ctx context.Context, id uuid.UUID, req Updat
 		return nil, err
 	}
 
-	log.Printf("✅ Book updated: %s (ID: %s)", book.Title, book.ID)
+	log.Printf("Book updated: %s (ID: %s)", book.Title, book.ID)
 	return book, nil
 }
 
@@ -277,7 +277,7 @@ func (s *catalogService) CreateAuthor(ctx context.Context, req CreateAuthorReque
 		return nil, err
 	}
 
-	log.Printf("✅ Author created: %s (ID: %s)", author.Name, author.ID)
+	log.Printf("Author created: %s (ID: %s)", author.Name, author.ID)
 	return author, nil
 }
 
@@ -345,7 +345,7 @@ func (s *catalogService) UpdateAuthor(ctx context.Context, id uuid.UUID, req Upd
 		return nil, err
 	}
 
-	log.Printf("✅ Author updated: %s (ID: %s)", author.Name, author.ID)
+	log.Printf("Author updated: %s (ID: %s)", author.Name, author.ID)
 	return author, nil
 }
 
@@ -372,7 +372,7 @@ func (s *catalogService) CreateCategory(ctx context.Context, req CreateCategoryR
 		return nil, err
 	}
 
-	log.Printf("✅ Category created: %s (ID: %s)", category.Name, category.ID)
+	log.Printf("Category created: %s (ID: %s)", category.Name, category.ID)
 	return category, nil
 }
 
@@ -431,7 +431,7 @@ func (s *catalogService) UpdateCategory(ctx context.Context, id uuid.UUID, req U
 		return nil, err
 	}
 
-	log.Printf("✅ Category updated: %s (ID: %s)", category.Name, category.ID)
+	log.Printf("Category updated: %s (ID: %s)", category.Name, category.ID)
 	return category, nil
 }
 
@@ -458,7 +458,7 @@ func (s *catalogService) CreatePublisher(ctx context.Context, req CreatePublishe
 		return nil, err
 	}
 
-	log.Printf("✅ Publisher created: %s (ID: %s)", publisher.Name, publisher.ID)
+	log.Printf("Publisher created: %s (ID: %s)", publisher.Name, publisher.ID)
 	return publisher, nil
 }
 
@@ -523,7 +523,7 @@ func (s *catalogService) UpdatePublisher(ctx context.Context, id uuid.UUID, req 
 		return nil, err
 	}
 
-	log.Printf("✅ Publisher updated: %s (ID: %s)", publisher.Name, publisher.ID)
+	log.Printf("Publisher updated: %s (ID: %s)", publisher.Name, publisher.ID)
 	return publisher, nil
 }
 

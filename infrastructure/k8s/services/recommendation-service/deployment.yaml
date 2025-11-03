@@ -34,11 +34,11 @@ spec:
               key: DATABASE_URL
         resources:
           requests:
-            cpu: 150m
+            cpu: 200m
             memory: 256Mi
           limits:
-            cpu: 400m
-            memory: 512Mi
+            cpu: 600m
+            memory: 1Gi
         livenessProbe:
           httpGet:
             path: /api/v1/health

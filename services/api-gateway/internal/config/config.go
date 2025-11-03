@@ -18,6 +18,7 @@ type Config struct {
 	CartServiceURL           string
 	OrderServiceURL          string
 	RecommendationServiceURL string
+	AdminServiceURL          string
 
 	// JWT
 	JWTSecret     string
@@ -52,6 +53,7 @@ func Load() (*Config, error) {
 		CartServiceURL:           getEnv("CART_SERVICE_URL", "http://localhost:8083"),
 		OrderServiceURL:          getEnv("ORDER_SERVICE_URL", "http://localhost:8084"),
 		RecommendationServiceURL: getEnv("RECOMMENDATION_SERVICE_URL", "http://localhost:8089"),
+		AdminServiceURL:          getEnv("ADMIN_SERVICE_URL", "http://localhost:8090"),
 
 		// JWT
 		JWTSecret:     getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
@@ -82,12 +84,13 @@ func (c *Config) Print() {
 	fmt.Println("=== API Gateway Configuration ===")
 	fmt.Printf("Environment: %s\n", c.Env)
 	fmt.Printf("Port: %s\n", c.Port)
-	fmt.Println("\n📡 Backend Services:")
+	fmt.Println("\nBackend Services:")
 	fmt.Printf("  Catalog: %s\n", c.CatalogServiceURL)
 	fmt.Printf("  User: %s\n", c.UserServiceURL)
 	fmt.Printf("  Cart: %s\n", c.CartServiceURL)
 	fmt.Printf("  Order: %s\n", c.OrderServiceURL)
 	fmt.Printf("  Recommendation: %s\n", c.RecommendationServiceURL)
+	fmt.Printf("  Admin: %s\n", c.AdminServiceURL)
 	fmt.Printf("\nRate Limiting: Enabled=%v, Max=%d, Window=%v\n", c.RateLimitEnabled, c.RateLimitMax, c.RateLimitWindow)
 	fmt.Printf("Request Timeout: %v\n", c.RequestTimeout)
 	fmt.Printf("CORS Origins: %s\n", c.AllowedOrigins)

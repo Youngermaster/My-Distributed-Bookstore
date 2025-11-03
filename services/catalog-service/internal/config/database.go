@@ -49,7 +49,7 @@ func InitDatabase(cfg *Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	log.Println("✅ Database connection established successfully")
+	log.Println("Database connection established successfully")
 
 	return db, nil
 }
@@ -71,7 +71,7 @@ func AutoMigrate(db *gorm.DB) error {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 
-	log.Println("✅ Database migrations completed successfully")
+	log.Println("Database migrations completed successfully")
 	return nil
 }
 
@@ -261,6 +261,6 @@ func SeedDatabase(db *gorm.DB) error {
 		return fmt.Errorf("failed to associate book with category: %w", err)
 	}
 
-	log.Println("✅ Database seeding completed successfully")
+	log.Println("Database seeding completed successfully")
 	return nil
 }

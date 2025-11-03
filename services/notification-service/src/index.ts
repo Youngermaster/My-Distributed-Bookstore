@@ -18,7 +18,7 @@ app.get('/health', (req, res) => {
 // TODO: Implement notification handlers
 
 app.listen(PORT, () => {
-  console.log(`✅ Notification Service running on port ${PORT}`);
+  console.log(`Notification Service running on port ${PORT}`);
 });
 
 export default app;
