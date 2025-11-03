@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: recommendation-service-config
+  namespace: production
+data:
+  redis-url: "redis://redis.production.svc.cluster.local:6379/0"
+  catalog-service-url: "catalog-service.production.svc.cluster.local:50051"
+  user-service-url: "user-service.production.svc.cluster.local:50052"
+  order-service-url: "order-service.production.svc.cluster.local:50054"

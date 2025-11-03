@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package recommendation;
+
+option go_package = "github.com/yourusername/bookstore/proto/recommendation";
+
+// RecommendationService provides personalized book recommendations
+service RecommendationService {
+  // Get personalized recommendations for a user
+  rpc GetRecommendations(GetRecommendationsRequest) returns (GetRecommendationsResponse);
+  
+  // Get similar books based on a book ID
+  rpc GetSimilarBooks(GetSimilarBooksRequest) returns (GetSimilarBooksResponse);
+  
+  // Get trending books
+  rpc GetTrendingBooks(GetTrendingBooksRequest) returns (GetTrendingBooksResponse);
+  
+  // Track a user interaction
+  rpc TrackInteraction(TrackInteractionRequest) returns (TrackInteractionResponse);
+}
+
+// Request messages
+
+message GetRecommendationsRequest {
+  string user_id = 1;
+  int32 limit = 2;
+}
+
+message GetSimilarBooksRequest {
+  string book_id = 1;
+  int32 limit = 2;
+}
+
+message GetTrendingBooksRequest {
+  int32 limit = 1;
+  int32 days = 2;
+}
+
+message TrackInteractionRequest {
+  string user_id = 1;
+  string book_id = 2;
+  string interaction_type = 3; // view, add_to_cart, purchase, review, wishlist
+}
+
+// Response messages
+
+message RecommendationItem {
+  string book_id = 1;
+  float score = 2;
+  string reason = 3;
+}
+
+message GetRecommendationsResponse {
+  string user_id = 1;
+  repeated RecommendationItem recommendations = 2;
+  string algorithm = 3;
+  int32 total = 4;
+}
+
+message GetSimilarBooksResponse {
+  string book_id = 1;
+  repeated RecommendationItem similar_books = 2;
+  int32 total = 3;
+}
+
+message GetTrendingBooksResponse {
+  repeated RecommendationItem trending_books = 1;
+  int32 total = 2;
+}
+
+message TrackInteractionResponse {
+  string interaction_id = 1;
+  bool success = 2;
+  string message = 3;
+}
