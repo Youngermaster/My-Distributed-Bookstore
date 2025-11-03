@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   useAuthService,
   useCartService,
   useOrderService,
   useRecommendationService,
 } from "@/services";
-import { booksAPI, recommendationsAPI } from "@/lib/api";
+import { booksAPI } from "@/lib/api";
 import { useCartStore } from "@/store/cartStore";
 import {
   Card,
@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/lib/toast";
-import { ShoppingCart, CreditCard, MapPin, Package } from "lucide-react";
+import { CreditCard, MapPin, Package } from "lucide-react";
 
 export default function CheckoutComplete() {
   const navigate = useNavigate();
@@ -71,15 +71,28 @@ export default function CheckoutComplete() {
   const handlePlaceOrder = async () => {
     setStep("processing");
 
+    if (!user || !cart) return;
+
     try {
+      // Format shipping address as string
+      const shippingAddressStr = `${shippingInfo.full_name}\n${shippingInfo.address_line1}${
+        shippingInfo.address_line2 ? "\n" + shippingInfo.address_line2 : ""
+      }\n${shippingInfo.city}, ${shippingInfo.state} ${shippingInfo.postal_code}\n${shippingInfo.country}\nPhone: ${shippingInfo.phone}`;
+
       // Create order
       const orderData = {
-        cart_id: cartId!,
-        shipping_address: shippingInfo,
+        user_id: user.id,
+        items: cart.items.map((item) => ({
+          book_id: item.book_id,
+          quantity: item.quantity,
+          unit_price: item.price,
+        })),
+        shipping_address: shippingAddressStr,
         payment_method: "card", // Placeholder since we don't have payment service
       };
 
-      const order = await createOrderMutation.mutateAsync(orderData);
+      const response = await createOrderMutation.mutateAsync(orderData);
+      const order = response.data;
 
       // Track purchase interactions for all items
       if (isAuthenticated && cart.items) {

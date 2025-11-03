@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { useCatalogService } from "@/services";
 import {
   Card,
@@ -13,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Search, Building2 } from "lucide-react";
 
 export default function Publishers() {
-  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const { usePublishers } = useCatalogService();
@@ -76,12 +74,10 @@ export default function Publishers() {
                 <PublisherCard
                   key={publisher.id}
                   publisher={publisher}
-                  onClick={() =>
-                    navigate({
-                      to: "/publishers/$id",
-                      params: { id: publisher.id },
-                    })
-                  }
+                  onClick={() => {
+                    // TODO: Create publishers.$id.tsx route and detail page
+                    console.log("Publisher clicked:", publisher.id);
+                  }}
                 />
               ))}
             </div>

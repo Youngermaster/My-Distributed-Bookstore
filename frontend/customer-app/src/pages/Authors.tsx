@@ -72,9 +72,9 @@ export default function Authors() {
                 <AuthorCard
                   key={author.id}
                   author={author}
-                  onClick={() =>
-                    navigate({ to: "/authors/$id", params: { id: author.id } })
-                  }
+                  onClick={() => {
+                    navigate({ to: "/authors/$id", params: { id: author.id } });
+                  }}
                 />
               ))}
             </div>
