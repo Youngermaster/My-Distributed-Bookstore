@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/card";
 import { Heart, ShoppingCart } from "lucide-react";
 import BookGrid from "@/components/BookGrid";
+import { ReviewStats, ReviewList, ReviewForm } from "@/components/reviews";
+import { getReviewsForBook, getReviewStatsForBook } from "@/mocks/reviews";
 import { type Book } from "@/types/book";
 
 export default function BookDetail() {
@@ -364,6 +366,24 @@ export default function BookDetail() {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div className="mt-12 space-y-6">
+          <h2 className="text-3xl font-bold text-gray-900">Reviews</h2>
+
+          {/* Review Stats */}
+          <ReviewStats stats={getReviewStatsForBook(id!)} />
+
+          {/* Review Form */}
+          <ReviewForm
+            bookId={id!}
+            bookTitle={book.title}
+            isAuthenticated={isAuthenticated}
+          />
+
+          {/* Review List */}
+          <ReviewList reviews={getReviewsForBook(id!)} />
         </div>
 
         {/* Similar Books Section */}

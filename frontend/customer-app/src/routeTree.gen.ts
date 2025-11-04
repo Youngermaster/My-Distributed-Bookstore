@@ -20,6 +20,7 @@ import { Route as CartRouteImport } from "./routes/cart";
 import { Route as BooksRouteImport } from "./routes/books";
 import { Route as AuthorsRouteImport } from "./routes/authors";
 import { Route as IndexRouteImport } from "./routes/index";
+import { Route as PublishersIdRouteImport } from "./routes/publishers.$id";
 import { Route as OrdersOrderIdRouteImport } from "./routes/orders.$orderId";
 import { Route as GenresSlugRouteImport } from "./routes/genres.$slug";
 import { Route as BooksIdRouteImport } from "./routes/books.$id";
@@ -82,6 +83,11 @@ const IndexRoute = IndexRouteImport.update({
   path: "/",
   getParentRoute: () => rootRouteImport,
 } as any);
+const PublishersIdRoute = PublishersIdRouteImport.update({
+  id: "/$id",
+  path: "/$id",
+  getParentRoute: () => PublishersRoute,
+} as any);
 const OrdersOrderIdRoute = OrdersOrderIdRouteImport.update({
   id: "/$orderId",
   path: "/$orderId",
@@ -122,7 +128,7 @@ export interface FileRoutesByFullPath {
   "/genres": typeof GenresRouteWithChildren;
   "/login": typeof LoginRoute;
   "/orders": typeof OrdersRouteWithChildren;
-  "/publishers": typeof PublishersRoute;
+  "/publishers": typeof PublishersRouteWithChildren;
   "/register": typeof RegisterRoute;
   "/wishlist": typeof WishlistRoute;
   "/admin/books": typeof AdminBooksRoute;
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   "/books/$id": typeof BooksIdRoute;
   "/genres/$slug": typeof GenresSlugRoute;
   "/orders/$orderId": typeof OrdersOrderIdRoute;
+  "/publishers/$id": typeof PublishersIdRoute;
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
@@ -141,7 +148,7 @@ export interface FileRoutesByTo {
   "/genres": typeof GenresRouteWithChildren;
   "/login": typeof LoginRoute;
   "/orders": typeof OrdersRouteWithChildren;
-  "/publishers": typeof PublishersRoute;
+  "/publishers": typeof PublishersRouteWithChildren;
   "/register": typeof RegisterRoute;
   "/wishlist": typeof WishlistRoute;
   "/admin/books": typeof AdminBooksRoute;
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   "/books/$id": typeof BooksIdRoute;
   "/genres/$slug": typeof GenresSlugRoute;
   "/orders/$orderId": typeof OrdersOrderIdRoute;
+  "/publishers/$id": typeof PublishersIdRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
@@ -161,7 +169,7 @@ export interface FileRoutesById {
   "/genres": typeof GenresRouteWithChildren;
   "/login": typeof LoginRoute;
   "/orders": typeof OrdersRouteWithChildren;
-  "/publishers": typeof PublishersRoute;
+  "/publishers": typeof PublishersRouteWithChildren;
   "/register": typeof RegisterRoute;
   "/wishlist": typeof WishlistRoute;
   "/admin/books": typeof AdminBooksRoute;
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   "/books/$id": typeof BooksIdRoute;
   "/genres/$slug": typeof GenresSlugRoute;
   "/orders/$orderId": typeof OrdersOrderIdRoute;
+  "/publishers/$id": typeof PublishersIdRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
@@ -190,7 +199,8 @@ export interface FileRouteTypes {
     | "/authors/$id"
     | "/books/$id"
     | "/genres/$slug"
-    | "/orders/$orderId";
+    | "/orders/$orderId"
+    | "/publishers/$id";
   fileRoutesByTo: FileRoutesByTo;
   to:
     | "/"
@@ -209,7 +219,8 @@ export interface FileRouteTypes {
     | "/authors/$id"
     | "/books/$id"
     | "/genres/$slug"
-    | "/orders/$orderId";
+    | "/orders/$orderId"
+    | "/publishers/$id";
   id:
     | "__root__"
     | "/"
@@ -228,7 +239,8 @@ export interface FileRouteTypes {
     | "/authors/$id"
     | "/books/$id"
     | "/genres/$slug"
-    | "/orders/$orderId";
+    | "/orders/$orderId"
+    | "/publishers/$id";
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -240,7 +252,7 @@ export interface RootRouteChildren {
   GenresRoute: typeof GenresRouteWithChildren;
   LoginRoute: typeof LoginRoute;
   OrdersRoute: typeof OrdersRouteWithChildren;
-  PublishersRoute: typeof PublishersRoute;
+  PublishersRoute: typeof PublishersRouteWithChildren;
   RegisterRoute: typeof RegisterRoute;
   WishlistRoute: typeof WishlistRoute;
   AdminBooksRoute: typeof AdminBooksRoute;
@@ -325,6 +337,13 @@ declare module "@tanstack/react-router" {
       fullPath: "/";
       preLoaderRoute: typeof IndexRouteImport;
       parentRoute: typeof rootRouteImport;
+    };
+    "/publishers/$id": {
+      id: "/publishers/$id";
+      path: "/$id";
+      fullPath: "/publishers/$id";
+      preLoaderRoute: typeof PublishersIdRouteImport;
+      parentRoute: typeof PublishersRoute;
     };
     "/orders/$orderId": {
       id: "/orders/$orderId";
@@ -414,6 +433,18 @@ const OrdersRouteChildren: OrdersRouteChildren = {
 const OrdersRouteWithChildren =
   OrdersRoute._addFileChildren(OrdersRouteChildren);
 
+interface PublishersRouteChildren {
+  PublishersIdRoute: typeof PublishersIdRoute;
+}
+
+const PublishersRouteChildren: PublishersRouteChildren = {
+  PublishersIdRoute: PublishersIdRoute,
+};
+
+const PublishersRouteWithChildren = PublishersRoute._addFileChildren(
+  PublishersRouteChildren
+);
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthorsRoute: AuthorsRouteWithChildren,
@@ -423,7 +454,7 @@ const rootRouteChildren: RootRouteChildren = {
   GenresRoute: GenresRouteWithChildren,
   LoginRoute: LoginRoute,
   OrdersRoute: OrdersRouteWithChildren,
-  PublishersRoute: PublishersRoute,
+  PublishersRoute: PublishersRouteWithChildren,
   RegisterRoute: RegisterRoute,
   WishlistRoute: WishlistRoute,
   AdminBooksRoute: AdminBooksRoute,

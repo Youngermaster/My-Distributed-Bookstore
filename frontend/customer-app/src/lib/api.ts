@@ -40,7 +40,11 @@ import type {
 } from "@/types/admin";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080",
+  baseURL:
+    import.meta.env.VITE_API_URL ||
+    (typeof window !== "undefined" && window.location.port === "3000"
+      ? "http://localhost:8080"
+      : ""),
   headers: {
     "Content-Type": "application/json",
   },

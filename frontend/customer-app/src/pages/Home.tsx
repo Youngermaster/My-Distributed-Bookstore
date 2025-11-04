@@ -69,15 +69,16 @@ export default function Home() {
       queryKey: [
         "books",
         "recommended",
-        recommendationsData?.recommendations.map((r) => r.book_id),
+        recommendationsData?.recommendations?.map((r) => r.book_id) || [],
       ],
       queryFn: () =>
         fetchBooksByIds(
-          recommendationsData?.recommendations.map((r) => r.book_id) || []
+          recommendationsData?.recommendations?.map((r) => r.book_id) || []
         ),
       enabled:
         isAuthenticated &&
         !!recommendationsData &&
+        !!recommendationsData.recommendations &&
         recommendationsData.recommendations.length > 0,
     });
 
@@ -86,13 +87,16 @@ export default function Home() {
     queryKey: [
       "books",
       "trending",
-      trendingData?.recommendations.map((r) => r.book_id),
+      trendingData?.recommendations?.map((r) => r.book_id) || [],
     ],
     queryFn: () =>
       fetchBooksByIds(
-        trendingData?.recommendations.map((r) => r.book_id) || []
+        trendingData?.recommendations?.map((r) => r.book_id) || []
       ),
-    enabled: !!trendingData && trendingData.recommendations.length > 0,
+    enabled:
+      !!trendingData &&
+      !!trendingData.recommendations &&
+      trendingData.recommendations.length > 0,
   });
 
   // Fetch full book details for popular books
@@ -100,11 +104,16 @@ export default function Home() {
     queryKey: [
       "books",
       "popular",
-      popularData?.recommendations.map((r) => r.book_id),
+      popularData?.recommendations?.map((r) => r.book_id) || [],
     ],
     queryFn: () =>
-      fetchBooksByIds(popularData?.recommendations.map((r) => r.book_id) || []),
-    enabled: !!popularData && popularData.recommendations.length > 0,
+      fetchBooksByIds(
+        popularData?.recommendations?.map((r) => r.book_id) || []
+      ),
+    enabled:
+      !!popularData &&
+      !!popularData.recommendations &&
+      popularData.recommendations.length > 0,
   });
 
   // Fetch all categories
