@@ -27,6 +27,8 @@ print_info "Tearing down workloads from namespace bookstore-dev..."
 kubectl delete -f frontend/ --ignore-not-found=true
 kubectl delete -f services/api-gateway/ --ignore-not-found=true
 kubectl delete -f services/recommendation-service/ --ignore-not-found=true
+kubectl delete -f services/review-service/ --ignore-not-found=true
+kubectl delete -f services/inventory-service/ --ignore-not-found=true
 kubectl delete -f services/order-service/ --ignore-not-found=true
 kubectl delete -f services/cart-service/ --ignore-not-found=true
 kubectl delete -f services/user-service/ --ignore-not-found=true

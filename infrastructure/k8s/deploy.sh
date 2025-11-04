@@ -42,6 +42,8 @@ IMAGE_SPECS=(
     "cart-service|../../services/cart-service"
     "order-service|../../services/order-service"
     "recommendation-service|../../services/recommendation-service"
+    "inventory-service|../../services/inventory-service"
+    "review-service|../../services/review-service"
     "api-gateway|../../services/api-gateway"
     "frontend|../../frontend/customer-app"
 )
@@ -95,6 +97,8 @@ deploy_component "User Service" "services/user-service/" "app=user-service"
 deploy_component "Cart Service" "services/cart-service/" "app=cart-service"
 deploy_component "Order Service" "services/order-service/" "app=order-service"
 deploy_component "Recommendation Service" "services/recommendation-service/" "app=recommendation-service"
+deploy_component "Inventory Service" "services/inventory-service/" "app=inventory-service"
+deploy_component "Review Service" "services/review-service/" "app=review-service"
 deploy_component "API Gateway" "services/api-gateway/" "app=api-gateway"
 deploy_component "Frontend" "frontend/" "app=frontend"
 

@@ -32,6 +32,8 @@ func main() {
 	orderClient := proxy.NewOrderClient(cfg.OrderServiceURL, cfg.RequestTimeout)
 	recommendationClient := proxy.NewRecommendationClient(cfg.RecommendationServiceURL, cfg.RequestTimeout)
 	adminClient := proxy.NewAdminClient(cfg.AdminServiceURL, cfg.RequestTimeout)
+	reviewClient := proxy.NewReviewClient(cfg.ReviewServiceURL, cfg.RequestTimeout)
+	inventoryClient := proxy.NewInventoryClient(cfg.InventoryServiceURL, cfg.RequestTimeout)
 
 	// Initialize handlers
 	catalogHandler := handler.NewCatalogHandler(catalogClient)
@@ -40,6 +42,8 @@ func main() {
 	orderHandler := handler.NewOrderHandler(orderClient)
 	recommendationHandler := handler.NewRecommendationHandler(recommendationClient)
 	adminHandler := handler.NewAdminHandler(adminClient)
+	reviewHandler := handler.NewReviewHandler(reviewClient)
+	inventoryHandler := handler.NewInventoryHandler(inventoryClient)
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
@@ -69,8 +73,8 @@ func main() {
 	}
 
 	// Health check endpoints
-	app.Get("/health", createHealthCheckHandler(catalogClient, userClient, cartClient, orderClient, recommendationClient, adminClient))
-	app.Get("/ready", createReadinessHandler(catalogClient, userClient, cartClient, orderClient, recommendationClient, adminClient))
+	app.Get("/health", createHealthCheckHandler(catalogClient, userClient, cartClient, orderClient, recommendationClient, adminClient, reviewClient, inventoryClient))
+	app.Get("/ready", createReadinessHandler(catalogClient, userClient, cartClient, orderClient, recommendationClient, adminClient, reviewClient, inventoryClient))
 
 	// API routes
 	api := app.Group("/api/v1")
@@ -116,6 +120,14 @@ func main() {
 	recommendations.Get("/trending", recommendationHandler.GetTrendingBooks)
 	recommendations.All("*", recommendationHandler.ProxyRecommendationRequest)
 
+	// Review routes (proxy to review-service)
+	reviews := api.Group("/reviews")
+	reviews.All("*", reviewHandler.ProxyReviewRequest)
+
+	// Inventory routes (proxy to inventory-service)
+	inventory := api.Group("/inventory")
+	inventory.All("*", inventoryHandler.ProxyInventoryRequest)
+
 	// Admin routes (proxy to admin-service) - requires authentication and admin role
 	admin := api.Group("/admin")
 	admin.All("*", adminHandler.ProxyAdminRequest)
@@ -142,6 +154,8 @@ func main() {
 				"recommendations":    "/api/v1/recommendations",
 				"my_recommendations": "/api/v1/recommendations/me",
 				"trending":           "/api/v1/recommendations/trending",
+				"reviews":            "/api/v1/reviews",
+				"inventory":          "/api/v1/inventory",
 			},
 		})
 	})
@@ -165,6 +179,8 @@ func main() {
 	log.Printf("  Orders: http://localhost:%s/api/v1/orders", cfg.Port)
 	log.Printf("  Recommendations: http://localhost:%s/api/v1/recommendations", cfg.Port)
 	log.Printf("  Admin: http://localhost:%s/api/v1/admin", cfg.Port)
+	log.Printf("  Reviews: http://localhost:%s/api/v1/reviews", cfg.Port)
+	log.Printf("  Inventory: http://localhost:%s/api/v1/inventory", cfg.Port)
 
 	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
@@ -186,6 +202,8 @@ func createHealthCheckHandler(
 	orderClient *proxy.OrderClient,
 	recommendationClient *proxy.RecommendationClient,
 	adminClient *proxy.AdminClient,
+	reviewClient *proxy.ReviewClient,
+	inventoryClient *proxy.InventoryClient,
 ) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Check all services health
@@ -195,8 +213,10 @@ func createHealthCheckHandler(
 		orderHealthy := orderClient.HealthCheck() == nil
 		recommendationHealthy := recommendationClient.HealthCheck() == nil
 		adminHealthy := adminClient.HealthCheck() == nil
+		reviewHealthy := reviewClient.HealthCheck() == nil
+		inventoryHealthy := inventoryClient.HealthCheck() == nil
 
-		allHealthy := catalogHealthy && userHealthy && cartHealthy && orderHealthy && recommendationHealthy && adminHealthy
+		allHealthy := catalogHealthy && userHealthy && cartHealthy && orderHealthy && recommendationHealthy && adminHealthy && reviewHealthy && inventoryHealthy
 		overallStatus := "ok"
 		if !allHealthy {
 			overallStatus = "degraded"
@@ -212,6 +232,8 @@ func createHealthCheckHandler(
 				"order":          fiber.Map{"healthy": orderHealthy},
 				"recommendation": fiber.Map{"healthy": recommendationHealthy},
 				"admin":          fiber.Map{"healthy": adminHealthy},
+				"review":         fiber.Map{"healthy": reviewHealthy},
+				"inventory":      fiber.Map{"healthy": inventoryHealthy},
 			},
 		})
 	}
@@ -224,6 +246,8 @@ func createReadinessHandler(
 	orderClient *proxy.OrderClient,
 	recommendationClient *proxy.RecommendationClient,
 	adminClient *proxy.AdminClient,
+	reviewClient *proxy.ReviewClient,
+	inventoryClient *proxy.InventoryClient,
 ) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Check all critical services are reachable
@@ -247,10 +271,16 @@ func createReadinessHandler(
 		if err := adminClient.HealthCheck(); err != nil {
 			notReadyServices = append(notReadyServices, "admin")
 		}
+		if err := reviewClient.HealthCheck(); err != nil {
+			notReadyServices = append(notReadyServices, "review")
+		}
+		if err := inventoryClient.HealthCheck(); err != nil {
+			notReadyServices = append(notReadyServices, "inventory")
+		}
 
 		if len(notReadyServices) > 0 {
 			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
-				"status":            "not ready",
+				"status":               "not ready",
 				"unavailable_services": notReadyServices,
 			})
 		}
@@ -264,6 +294,8 @@ func createReadinessHandler(
 				"order":          "ready",
 				"recommendation": "ready",
 				"admin":          "ready",
+				"review":         "ready",
+				"inventory":      "ready",
 			},
 		})
 	}
