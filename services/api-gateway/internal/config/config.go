@@ -19,6 +19,8 @@ type Config struct {
 	OrderServiceURL          string
 	RecommendationServiceURL string
 	AdminServiceURL          string
+	ReviewServiceURL         string
+	InventoryServiceURL      string
 
 	// JWT
 	JWTSecret     string

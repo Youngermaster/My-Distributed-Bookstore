@@ -5,7 +5,9 @@ import (
 	"log"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/youngermaster/distributed-bookstore/catalog-service/internal/domain"
+	"github.com/youngermaster/distributed-bookstore/catalog-service/internal/seeds"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -81,186 +83,165 @@ func SeedDatabase(db *gorm.DB) error {
 
 	// Check if data already exists
 	var count int64
-	db.Model(&domain.Book{}).Count(&count)
+	if err := db.Model(&domain.Book{}).Count(&count).Error; err != nil {
+		return fmt.Errorf("failed to check existing data: %w", err)
+	}
 	if count > 0 {
 		log.Println("📚 Database already contains data, skipping seed")
 		return nil
 	}
 
-	// Create some sample publishers
-	publishers := []domain.Publisher{
-		{
-			Name:        "O'Reilly Media",
-			Country:     "USA",
-			Website:     "https://www.oreilly.com",
-			Description: "Technology and business learning platform",
-		},
-		{
-			Name:        "Manning Publications",
-			Country:     "USA",
-			Website:     "https://www.manning.com",
-			Description: "Publisher of computer books for software developers",
-		},
-		{
-			Name:        "Addison-Wesley",
-			Country:     "USA",
-			Website:     "https://www.awprofessional.com",
-			Description: "Publisher of technology and computer science books",
-		},
-	}
-
-	for i := range publishers {
-		if err := db.Create(&publishers[i]).Error; err != nil {
-			return fmt.Errorf("failed to create publisher: %w", err)
+	return db.Transaction(func(tx *gorm.DB) error {
+		// Seed categories
+		categorySeeds := seeds.GetCategories()
+		categories := make([]domain.Category, len(categorySeeds))
+		for i, seed := range categorySeeds {
+			categories[i] = domain.Category{
+				ID:          seed.ID,
+				Name:        seed.Name,
+				Slug:        seed.Slug,
+				Description: seed.Description,
+			}
 		}
-	}
-
-	// Create some sample authors
-	authors := []domain.Author{
-		{
-			Name:    "Martin Fowler",
-			Bio:     "Software development expert and author",
-			Country: "UK",
-		},
-		{
-			Name:    "Robert C. Martin",
-			Bio:     "Software engineer and instructor, known as Uncle Bob",
-			Country: "USA",
-		},
-		{
-			Name:    "Eric Evans",
-			Bio:     "Domain-Driven Design pioneer",
-			Country: "USA",
-		},
-		{
-			Name:    "Andrew S. Tanenbaum",
-			Bio:     "Computer science professor and author",
-			Country: "Netherlands",
-		},
-		{
-			Name:    "Maarten van Steen",
-			Bio:     "Distributed systems researcher",
-			Country: "Netherlands",
-		},
-	}
-
-	for i := range authors {
-		if err := db.Create(&authors[i]).Error; err != nil {
-			return fmt.Errorf("failed to create author: %w", err)
+		if len(categories) > 0 {
+			if err := tx.Create(&categories).Error; err != nil {
+				return fmt.Errorf("failed to create categories: %w", err)
+			}
 		}
-	}
 
-	// Create some sample categories
-	categories := []domain.Category{
-		{
-			Name:        "Programming",
-			Slug:        "programming",
-			Description: "Software development and programming books",
-		},
-		{
-			Name:        "Distributed Systems",
-			Slug:        "distributed-systems",
-			Description: "Books about distributed systems and architecture",
-		},
-		{
-			Name:        "Software Architecture",
-			Slug:        "software-architecture",
-			Description: "System design and architecture patterns",
-		},
-		{
-			Name:        "Databases",
-			Slug:        "databases",
-			Description: "Database design and management",
-		},
-		{
-			Name:        "Cloud Computing",
-			Slug:        "cloud-computing",
-			Description: "Cloud platforms and services",
-		},
-	}
-
-	for i := range categories {
-		if err := db.Create(&categories[i]).Error; err != nil {
-			return fmt.Errorf("failed to create category: %w", err)
+		categoryMap := make(map[string]*domain.Category, len(categories))
+		for i := range categories {
+			category := &categories[i]
+			categoryMap[category.Slug] = category
 		}
-	}
 
-	// Create some sample books
-	pubDate1 := time.Date(2018, 3, 9, 0, 0, 0, 0, time.UTC)
-	pubDate2 := time.Date(2008, 8, 1, 0, 0, 0, 0, time.UTC)
-	pubDate3 := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
-
-	books := []domain.Book{
-		{
-			ISBN:            "9781492032649",
-			Title:           "Building Microservices: Designing Fine-Grained Systems",
-			Description:     "A comprehensive guide to building microservices architecture",
-			Price:           49.99,
-			StockQuantity:   50,
-			PublisherID:     &publishers[0].ID,
-			CoverImageURL:   "https://covers.oreillystatic.com/images/0636920033158/cat.gif",
-			PublicationDate: &pubDate1,
-			Language:        "English",
-			PageCount:       280,
-		},
-		{
-			ISBN:            "9780132350884",
-			Title:           "Clean Code: A Handbook of Agile Software Craftsmanship",
-			Description:     "Even bad code can function. But if code isn't clean, it can bring a development organization to its knees.",
-			Price:           44.99,
-			StockQuantity:   75,
-			PublisherID:     &publishers[2].ID,
-			CoverImageURL:   "https://m.media-amazon.com/images/I/51E2055ZGUL.jpg",
-			PublicationDate: &pubDate2,
-			Language:        "English",
-			PageCount:       464,
-		},
-		{
-			ISBN:            "9789023456789",
-			Title:           "Distributed Systems: Principles and Paradigms",
-			Description:     "This book covers the principles, advanced concepts, and technologies of distributed systems in detail.",
-			Price:           89.99,
-			StockQuantity:   30,
-			PublisherID:     &publishers[2].ID,
-			CoverImageURL:   "https://m.media-amazon.com/images/I/51OE8WCts7L._SL1360_.jpg",
-			PublicationDate: &pubDate3,
-			Language:        "English",
-			PageCount:       596,
-		},
-	}
-
-	for i := range books {
-		if err := db.Create(&books[i]).Error; err != nil {
-			return fmt.Errorf("failed to create book: %w", err)
+		// Seed authors
+		authorSeeds := seeds.GetAuthors()
+		authors := make([]domain.Author, len(authorSeeds))
+		for i, seed := range authorSeeds {
+			authors[i] = domain.Author{
+				ID:       seed.ID,
+				Name:     seed.Name,
+				Bio:      seed.Bio,
+				Country:  seed.Country,
+				ImageURL: seed.ImageURL,
+			}
 		}
-	}
+		if len(authors) > 0 {
+			if err := tx.Create(&authors).Error; err != nil {
+				return fmt.Errorf("failed to create authors: %w", err)
+			}
+		}
 
-	// Associate books with authors
-	if err := db.Model(&books[0]).Association("Authors").Append(&authors[0]); err != nil {
-		return fmt.Errorf("failed to associate book with author: %w", err)
-	}
+		authorMap := make(map[string]*domain.Author, len(authors))
+		for i, seed := range authorSeeds {
+			authorMap[seed.Code] = &authors[i]
+		}
 
-	if err := db.Model(&books[1]).Association("Authors").Append(&authors[1]); err != nil {
-		return fmt.Errorf("failed to associate book with author: %w", err)
-	}
+		// Seed publishers
+		publisherSeeds := seeds.GetPublishers()
+		publishers := make([]domain.Publisher, len(publisherSeeds))
+		for i, seed := range publisherSeeds {
+			publishers[i] = domain.Publisher{
+				ID:          seed.ID,
+				Name:        seed.Name,
+				Country:     seed.Country,
+				Website:     seed.Website,
+				Description: seed.Description,
+			}
+		}
+		if len(publishers) > 0 {
+			if err := tx.Create(&publishers).Error; err != nil {
+				return fmt.Errorf("failed to create publishers: %w", err)
+			}
+		}
 
-	if err := db.Model(&books[2]).Association("Authors").Append([]domain.Author{authors[3], authors[4]}); err != nil {
-		return fmt.Errorf("failed to associate book with authors: %w", err)
-	}
+		publisherMap := make(map[string]*domain.Publisher, len(publishers))
+		for i, seed := range publisherSeeds {
+			publisherMap[seed.Code] = &publishers[i]
+		}
 
-	// Associate books with categories
-	if err := db.Model(&books[0]).Association("Categories").Append([]domain.Category{categories[1], categories[2]}); err != nil {
-		return fmt.Errorf("failed to associate book with categories: %w", err)
-	}
+		// Seed books and relationships
+		bookSeeds := seeds.GetBooks()
+		books := make([]domain.Book, len(bookSeeds))
+		for i, seed := range bookSeeds {
+			pubDate := seeds.MustParseDate(seed.PublicationDate)
+			books[i] = domain.Book{
+				ID:              seed.ID,
+				ISBN:            seed.ISBN,
+				Title:           seed.Title,
+				Description:     seed.Description,
+				Price:           seed.Price,
+				StockQuantity:   seed.Stock,
+				CoverImageURL:   seed.CoverImageURL,
+				PublicationDate: seeds.TimePtr(pubDate),
+				Language:        seed.Language,
+				PageCount:       seed.PageCount,
+			}
 
-	if err := db.Model(&books[1]).Association("Categories").Append(&categories[0]); err != nil {
-		return fmt.Errorf("failed to associate book with category: %w", err)
-	}
+			if publisher, ok := publisherMap[seed.PublisherCode]; ok {
+				books[i].PublisherID = &publisher.ID
+			} else {
+				return fmt.Errorf("publisher code %q not found for book %q", seed.PublisherCode, seed.Title)
+			}
+		}
 
-	if err := db.Model(&books[2]).Association("Categories").Append(&categories[1]); err != nil {
-		return fmt.Errorf("failed to associate book with category: %w", err)
-	}
+		if len(books) > 0 {
+			if err := tx.Create(&books).Error; err != nil {
+				return fmt.Errorf("failed to create books: %w", err)
+			}
+		}
 
-	log.Println("Database seeding completed successfully")
-	return nil
+		for i, seed := range bookSeeds {
+			book := &books[i]
+
+			// Attach categories
+			var categoryRefs []*domain.Category
+			seenCategories := make(map[uuid.UUID]struct{})
+			for _, slug := range seed.CategorySlugs {
+				category, ok := categoryMap[slug]
+				if !ok {
+					return fmt.Errorf("book %q references unknown category %q", seed.Title, slug)
+				}
+				if _, exists := seenCategories[category.ID]; !exists {
+					seenCategories[category.ID] = struct{}{}
+					categoryRefs = append(categoryRefs, category)
+				}
+			}
+
+			if len(categoryRefs) > 0 {
+				assoc := tx.Model(book).Association("Categories")
+				for _, category := range categoryRefs {
+					if err := assoc.Append(category); err != nil {
+						return fmt.Errorf("failed to associate categories for %q: %w", seed.Title, err)
+					}
+				}
+			}
+
+			// Attach authors
+			var authorRefs []*domain.Author
+			seenAuthors := make(map[uuid.UUID]struct{})
+			for _, code := range seed.AuthorCodes {
+				author, ok := authorMap[code]
+				if !ok {
+					return fmt.Errorf("book %q references unknown author %q", seed.Title, code)
+				}
+				if _, exists := seenAuthors[author.ID]; !exists {
+					seenAuthors[author.ID] = struct{}{}
+					authorRefs = append(authorRefs, author)
+				}
+			}
+
+			if len(authorRefs) > 0 {
+				assoc := tx.Model(book).Association("Authors")
+				for _, author := range authorRefs {
+					if err := assoc.Append(author); err != nil {
+						return fmt.Errorf("failed to associate authors for %q: %w", seed.Title, err)
+					}
+				}
+			}
+		}
+
+		return nil
+	})
 }
