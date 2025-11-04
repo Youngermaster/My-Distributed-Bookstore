@@ -38,6 +38,17 @@ class Inventory(Base):
         index=True
     )
 
+    title: Mapped[str] = mapped_column(
+        String(200),
+        nullable=False,
+        index=True
+    )
+
+    short_description: Mapped[str] = mapped_column(
+        String(500),
+        nullable=False
+    )
+
     available_quantity: Mapped[int] = mapped_column(
         Integer,
         nullable=False,

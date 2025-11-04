@@ -1,0 +1,80 @@
+@baseUrl = http://localhost:8088/api/v1
+
+### Create a review (POST /reviews)
+# Creates a new review with sentiment analysis
+POST {{baseUrl}}/reviews
+Content-Type: application/json
+
+{
+    "book_id": "11111111-1111-1111-1111-111111111111",
+    "user_id": "22222222-2222-2222-2222-222222222222",
+    "title": "Great fantasy book!",
+    "content": "This book was amazing! The world-building and character development were outstanding.",
+    "rating": 5
+}
+
+### Create a review with minimum rating (test validation)
+POST {{baseUrl}}/reviews
+Content-Type: application/json
+
+{
+    "book_id": "11111111-1111-1111-1111-111111111111",
+    "user_id": "22222222-2222-2222-2222-222222222222",
+    "title": "Not great",
+    "content": "I didn't enjoy this book at all. The plot was confusing.",
+    "rating": 1
+}
+
+### Get a review by ID (GET /reviews/{review_id})
+# Replace <REVIEW_ID> with an actual UUID from a created review
+GET {{baseUrl}}/reviews/<REVIEW_ID>
+
+### Get reviews for a book with pagination (GET /reviews/book/{book_id})
+# Lists all reviews for book_id with page=1, page_size=10
+GET {{baseUrl}}/reviews/book/11111111-1111-1111-1111-111111111111?page=1&page_size=10
+
+### Get reviews for a book - page 2 (pagination example)
+GET {{baseUrl}}/reviews/book/11111111-1111-1111-1111-111111111111?page=2&page_size=5
+
+### Get book review statistics (GET /reviews/book/{book_id}/stats)
+# Returns average rating and sentiment distribution
+GET {{baseUrl}}/reviews/book/11111111-1111-1111-1111-111111111111/stats
+
+### Update a review (PUT /reviews/{review_id})
+# Replace <REVIEW_ID> with an actual UUID
+# Updates review content and re-analyzes sentiment
+PUT {{baseUrl}}/reviews/<REVIEW_ID>
+Content-Type: application/json
+
+{
+    "title": "Updated: Changed my mind",
+    "content": "After a second read, I noticed more subtle details that improved my opinion.",
+    "rating": 4
+}
+
+### Vote review as helpful (POST /reviews/{review_id}/vote)
+# Replace <REVIEW_ID> with an actual UUID
+POST {{baseUrl}}/reviews/<REVIEW_ID>/vote
+Content-Type: application/json
+
+{
+    "user_id": "33333333-3333-3333-3333-333333333333",
+    "is_helpful": true
+}
+
+### Vote review as not helpful
+# Replace <REVIEW_ID> with an actual UUID
+POST {{baseUrl}}/reviews/<REVIEW_ID>/vote
+Content-Type: application/json
+
+{
+    "user_id": "44444444-4444-4444-4444-444444444444",
+    "is_helpful": false
+}
+
+### Delete a review (DELETE /reviews/{review_id})
+# Replace <REVIEW_ID> with an actual UUID
+DELETE {{baseUrl}}/reviews/2b317ff5-3d33-4fca-9e22-b5913a61a3fe
+
+### Verify review was deleted (should return 404)
+GET {{baseUrl}}/reviews/<REVIEW_ID>

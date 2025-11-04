@@ -63,6 +63,8 @@ class InventoryService:
         # Create inventory
         inventory = Inventory(
             book_id=inventory_data.book_id,
+            title=inventory_data.title,
+            short_description=inventory_data.short_description,
             available_quantity=inventory_data.initial_quantity,
             reserved_quantity=0,
             reorder_level=inventory_data.reorder_level,
@@ -195,6 +197,8 @@ class InventoryService:
         low_stock_items = [
             LowStockItem(
                 book_id=inv.book_id,
+                title=inv.title,
+                short_description=inv.short_description,
                 available_quantity=inv.available_quantity,
                 reorder_level=inv.reorder_level,
                 deficit=inv.reorder_level - inv.available_quantity
