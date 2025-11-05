@@ -4,5 +4,6 @@ metadata:
   name: frontend-config
   namespace: bookstore-dev
 data:
-  # This will be used during build time
-  VITE_API_URL: "http://localhost:30080"
+  # Empty string will make the frontend use relative URLs (same domain as frontend)
+  # This works when API Gateway and Frontend are both exposed via LoadBalancer
+  VITE_API_URL: ""

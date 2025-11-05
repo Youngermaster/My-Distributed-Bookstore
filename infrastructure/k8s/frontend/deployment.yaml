@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: 905418472239.dkr.ecr.us-east-1.amazonaws.com/frontend:latest
+        image: 905418472239.dkr.ecr.us-east-1.amazonaws.com/customer-frontend:latest
         imagePullPolicy: Always  # For local minikube development
         ports:
         - name: http

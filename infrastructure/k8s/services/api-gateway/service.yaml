@@ -6,12 +6,11 @@ metadata:
   labels:
     app: api-gateway
 spec:
-  type: NodePort
+  type: LoadBalancer
   ports:
   - name: http
-    port: 8080
+    port: 80
     targetPort: 8080
-    nodePort: 30080
     protocol: TCP
   selector:
     app: api-gateway
