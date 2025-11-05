@@ -28,26 +28,15 @@ spec:
         - containerPort: 8082
           name: http
         env:
-        - name: DB_HOST
-          value: "postgres"
-        - name: DB_PORT
-          value: "5432"
-        - name: DB_USER
-          value: "userservice"
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: postgres-credentials
-              key: user_password
-        - name: DB_NAME
-          value: "userdb"
+        - name: DATABASE_URL
+          value: "postgresql://userservice:dev_password@postgres:5432/userdb?sslmode=disable"
         - name: PORT
           value: "8082"
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
               name: jwt-secret
-              key: secret
+              key: JWT_SECRET
         resources:
           requests:
             memory: "128Mi"

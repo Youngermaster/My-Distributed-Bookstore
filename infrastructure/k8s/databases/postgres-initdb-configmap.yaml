@@ -5,5 +5,41 @@ metadata:
   namespace: bookstore-dev
 data:
   01-create-databases.sql: |
+    -- Core service databases
     CREATE DATABASE reviews_db;
     CREATE DATABASE inventory_db;
+    CREATE DATABASE userdb;
+    CREATE DATABASE orderdb;
+    
+  02-create-users.sql: |
+    -- Create service users with passwords
+    CREATE USER userservice WITH PASSWORD 'dev_password';
+    CREATE USER orderservice WITH PASSWORD 'dev_password';
+    CREATE USER orderuser WITH PASSWORD 'dev_password';
+    
+  03-grant-permissions.sql: |
+    -- Grant database-level permissions
+    GRANT ALL PRIVILEGES ON DATABASE userdb TO userservice;
+    GRANT ALL PRIVILEGES ON DATABASE orderdb TO orderservice;
+    GRANT ALL PRIVILEGES ON DATABASE orderdb TO orderuser;
+    
+    -- Grant schema permissions for userdb
+    \c userdb
+    GRANT ALL ON SCHEMA public TO userservice;
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO userservice;
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO userservice;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO userservice;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO userservice;
+    
+    -- Grant schema permissions for orderdb
+    \c orderdb
+    GRANT ALL ON SCHEMA public TO orderservice;
+    GRANT ALL ON SCHEMA public TO orderuser;
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO orderservice;
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO orderservice;
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO orderuser;
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO orderuser;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO orderservice;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO orderservice;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO orderuser;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO orderuser;
