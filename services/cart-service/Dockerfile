@@ -6,13 +6,12 @@ WORKDIR /app
 # Install dependencies
 RUN apk add --no-cache git
 
-# Copy go mod and source code
+# Copy go mod files and source code
 COPY go.mod ./
 COPY . .
 
-# Download dependencies and tidy
-RUN go mod download
-RUN go mod tidy
+# Download dependencies and generate go.sum
+RUN go mod tidy && go mod download
 
 # Build binary
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/server/main.go
@@ -26,9 +25,6 @@ WORKDIR /root/
 
 # Copy binary from builder
 COPY --from=builder /app/main .
-
-# Migrations directory doesn't exist, skip
-# COPY --from=builder /app/migrations ./migrations 2>/dev/null || true
 
 # Expose ports
 EXPOSE 8083 50053

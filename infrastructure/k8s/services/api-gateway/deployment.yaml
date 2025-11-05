@@ -22,8 +22,8 @@ spec:
     spec:
       containers:
       - name: api-gateway
-        image: api-gateway:latest
-        imagePullPolicy: Never  # For local minikube development
+        image: 905418472239.dkr.ecr.us-east-1.amazonaws.com/api-gateway:latest
+        imagePullPolicy: Always  # For local minikube development
         ports:
         - name: http
           containerPort: 8080

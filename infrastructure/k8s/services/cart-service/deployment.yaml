@@ -6,10 +6,15 @@ metadata:
   labels:
     app: cart-service
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: cart-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     metadata:
       labels:
@@ -17,35 +22,42 @@ spec:
     spec:
       containers:
       - name: cart-service
-        image: cart-service:latest
-        imagePullPolicy: Never
+        image: 905418472239.dkr.ecr.us-east-1.amazonaws.com/cart-service:latest
+        imagePullPolicy: Always  # Change to Always for EKS with ECR
         ports:
-        - name: http
-          containerPort: 8083
-          protocol: TCP
-        envFrom:
-        - configMapRef:
-            name: cart-service-config
+        - containerPort: 8083
+          name: http
+        env:
+        - name: REDIS_HOST
+          value: "redis"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: REDIS_PASSWORD
+          value: ""
+        - name: REDIS_DB
+          value: "0"
+        - name: PORT
+          value: "8083"
         resources:
           requests:
-            cpu: 100m
-            memory: 128Mi
+            memory: "128Mi"
+            cpu: "100m"
           limits:
-            cpu: 300m
-            memory: 256Mi
+            memory: "512Mi"
+            cpu: "500m"
         livenessProbe:
           httpGet:
             path: /health
             port: 8083
-          initialDelaySeconds: 20
+          initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /ready
+            path: /health
             port: 8083
-          initialDelaySeconds: 5
+          initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3

@@ -15,6 +15,9 @@ RUN if [ -f go.sum ]; then go mod download; fi
 # Copy source code
 COPY . .
 
+# Download any missing dependencies
+RUN go mod download
+
 # Build binary
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/server/main.go
 
