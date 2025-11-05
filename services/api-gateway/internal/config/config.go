@@ -56,6 +56,8 @@ func Load() (*Config, error) {
 		OrderServiceURL:          getEnv("ORDER_SERVICE_URL", "http://localhost:8084"),
 		RecommendationServiceURL: getEnv("RECOMMENDATION_SERVICE_URL", "http://localhost:8089"),
 		AdminServiceURL:          getEnv("ADMIN_SERVICE_URL", "http://localhost:8090"),
+		ReviewServiceURL:         getEnv("REVIEW_SERVICE_URL", "http://localhost:8088"),
+		InventoryServiceURL:      getEnv("INVENTORY_SERVICE_URL", "http://localhost:8086"),
 
 		// JWT
 		JWTSecret:     getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
@@ -93,6 +95,8 @@ func (c *Config) Print() {
 	fmt.Printf("  Order: %s\n", c.OrderServiceURL)
 	fmt.Printf("  Recommendation: %s\n", c.RecommendationServiceURL)
 	fmt.Printf("  Admin: %s\n", c.AdminServiceURL)
+	fmt.Printf("  Review: %s\n", c.ReviewServiceURL)
+	fmt.Printf("  Inventory: %s\n", c.InventoryServiceURL)
 	fmt.Printf("\nRate Limiting: Enabled=%v, Max=%d, Window=%v\n", c.RateLimitEnabled, c.RateLimitMax, c.RateLimitWindow)
 	fmt.Printf("Request Timeout: %v\n", c.RequestTimeout)
 	fmt.Printf("CORS Origins: %s\n", c.AllowedOrigins)
