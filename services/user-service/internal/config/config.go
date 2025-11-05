@@ -36,6 +36,10 @@ type Config struct {
 
 	// Logging
 	LogLevel string
+
+	// Messaging
+	RabbitMQURL      string
+	RabbitMQExchange string
 }
 
 // Load loads configuration from environment variables
@@ -64,6 +68,9 @@ func Load() (*Config, error) {
 		CORSAllowCredentials: getEnvAsBool("CORS_ALLOW_CREDENTIALS", true),
 
 		LogLevel: getEnv("LOG_LEVEL", "info"),
+
+        RabbitMQURL:      getEnv("RABBITMQ_URL", "amqp://bookstore:dev_password@rabbitmq:5672/"),
+		RabbitMQExchange: getEnv("RABBITMQ_EXCHANGE", "bookstore.events"),
 	}
 
 	// Validate required fields

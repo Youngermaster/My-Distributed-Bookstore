@@ -1,14 +1,13 @@
+import { toast as sonnerToast } from "sonner";
+
 export const toast = {
   success(message: string) {
-    if (typeof window !== "undefined") {
-      // eslint-disable-next-line no-console
-      console.info(`[success] ${message}`);
-    }
+    sonnerToast.success(message);
   },
   error(message: string) {
-    if (typeof window !== "undefined") {
-      // eslint-disable-next-line no-console
-      console.error(`[error] ${message}`);
-    }
+    sonnerToast.error(message);
+  },
+  info(message: string) {
+    sonnerToast.info(message);
   },
 };

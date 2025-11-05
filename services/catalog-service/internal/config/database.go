@@ -166,6 +166,11 @@ func SeedDatabase(db *gorm.DB) error {
 		books := make([]domain.Book, len(bookSeeds))
 		for i, seed := range bookSeeds {
 			pubDate := seeds.MustParseDate(seed.PublicationDate)
+			coverURL := seed.CoverImageURL
+			if coverURL == "" && seed.ISBN != "" {
+				coverURL = fmt.Sprintf("https://covers.openlibrary.org/b/isbn/%s-L.jpg", seed.ISBN)
+			}
+
 			books[i] = domain.Book{
 				ID:              seed.ID,
 				ISBN:            seed.ISBN,
@@ -173,7 +178,7 @@ func SeedDatabase(db *gorm.DB) error {
 				Description:     seed.Description,
 				Price:           seed.Price,
 				StockQuantity:   seed.Stock,
-				CoverImageURL:   seed.CoverImageURL,
+				CoverImageURL:   coverURL,
 				PublicationDate: seeds.TimePtr(pubDate),
 				Language:        seed.Language,
 				PageCount:       seed.PageCount,

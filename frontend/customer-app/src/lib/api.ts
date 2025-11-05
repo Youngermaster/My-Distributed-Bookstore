@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import type {
   LoginRequest,
   RegisterRequest,
@@ -27,6 +27,12 @@ import type {
   PopularBooksParams,
   SimilarBooksParams,
 } from "@/types/recommendation";
+import type {
+  ReviewListResponse,
+  ReviewStatsResponse,
+  CreateReviewRequest,
+  ReviewVoteRequest,
+} from "@/types/review";
 import type {
   DashboardStats,
   SalesAnalytics,
@@ -66,22 +72,35 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config as AxiosRequestConfig & {
+      _retry?: boolean;
+    };
 
-    if (error.response?.status === 401 && originalRequest) {
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/users/auth/refresh")
+    ) {
       const refreshToken = localStorage.getItem("refresh_token");
 
       if (refreshToken) {
+        originalRequest._retry = true;
+
         try {
           const { data } = await axios.post<RefreshTokenResponse>(
             `${api.defaults.baseURL}/api/v1/users/auth/refresh`,
             { refresh_token: refreshToken }
           );
 
-          localStorage.setItem("token", data.token);
+          localStorage.setItem("token", data.access_token);
           localStorage.setItem("refresh_token", data.refresh_token);
 
-          originalRequest.headers.Authorization = `Bearer ${data.token}`;
+          originalRequest.headers = {
+            ...(originalRequest.headers ?? {}),
+            Authorization: `Bearer ${data.access_token}`,
+          };
+
           return api(originalRequest);
         } catch (refreshError) {
           localStorage.removeItem("token");
@@ -110,7 +129,7 @@ export const authAPI = {
       refresh_token,
     }),
 
-  me: () => api.get<{ data: User }>("/api/v1/users/me"),
+  me: () => api.get<User>("/api/v1/users/me"),
 };
 
 // Books API (through API Gateway -> Catalog Service)
@@ -197,6 +216,23 @@ export const cartAPI = {
 
   clear: (cartId: string) =>
     api.delete<{ success: boolean; message: string }>(`/api/v1/cart/${cartId}`),
+};
+
+// Reviews API (through API Gateway -> Review Service)
+export const reviewAPI = {
+  listForBook: (bookId: string, page = 1, pageSize = 10) =>
+    api.get<ReviewListResponse>(`/api/v1/reviews/book/${bookId}`, {
+      params: { page, page_size: pageSize },
+    }),
+
+  getStatsForBook: (bookId: string) =>
+    api.get<ReviewStatsResponse>(`/api/v1/reviews/book/${bookId}/stats`),
+
+  create: (payload: CreateReviewRequest) =>
+    api.post(`/api/v1/reviews`, payload),
+
+  vote: (reviewId: string, payload: ReviewVoteRequest) =>
+    api.post(`/api/v1/reviews/${reviewId}/vote`, payload),
 };
 
 // Order API (through API Gateway -> Order Service)

@@ -59,8 +59,8 @@ services:
       PORT: 8080
       ENV: development
       CATALOG_SERVICE_URL: http://catalog-service:8081
-      RATE_LIMIT_ENABLED: "true"
-      RATE_LIMIT_MAX: 100
+      RATE_LIMIT_ENABLED: "false"
+      RATE_LIMIT_MAX: 900
       RATE_LIMIT_WINDOW: 1m
       ALLOWED_ORIGINS: "*"
       REQUEST_TIMEOUT: 30s

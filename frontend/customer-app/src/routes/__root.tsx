@@ -4,8 +4,18 @@ import { useAuthStore } from "@/store/authStore";
 import { useThemeStore } from "@/store/themeStore";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
-import { Heart, BookOpen, LogOut, User, ShoppingCart, Package, Shield } from "lucide-react";
+import {
+  Heart,
+  BookOpen,
+  LogOut,
+  User,
+  ShoppingCart,
+  Package,
+  Shield,
+} from "lucide-react";
 import { useEffect } from "react";
+import { Toaster } from "@/components/ui/sonner";
+import { toast } from "@/lib/toast";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,7 +28,8 @@ const queryClient = new QueryClient({
 
 function Navigation() {
   const { isAuthenticated, user, logout } = useAuthStore();
-  const isAdmin = user?.role?.name === "admin";
+  const roles = user?.roles ?? (user?.role ? [user.role] : []);
+  const isAdmin = roles.some((role) => role.name === "admin");
 
   return (
     <nav className="bg-background border-b border-border sticky top-0 z-50">
@@ -97,7 +108,14 @@ function Navigation() {
                     {user?.full_name}
                   </span>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => logout()}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    await logout();
+                    toast.success("You have been logged out.");
+                  }}
+                >
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
                 </Button>
@@ -145,6 +163,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <Navigation />
       <Outlet />
+      <Toaster />
     </QueryClientProvider>
   );
 }

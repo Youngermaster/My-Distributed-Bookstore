@@ -173,9 +173,11 @@ services:
       DB_USER: userservice
       DB_PASSWORD: userpass123
       DB_NAME: userdb
-      PORT: 8081
+      HTTP_PORT: 8082
+      RABBITMQ_URL: amqp://bookstore:dev_password@rabbitmq:5672/
+      RABBITMQ_EXCHANGE: bookstore.events
     ports:
-      - "8081:8081"
+      - "8082:8082"
     depends_on:
       user-db:
         condition: service_healthy
@@ -193,7 +195,9 @@ services:
       REDIS_ADDR: cart-redis:6379
       REDIS_PASSWORD: ""
       REDIS_DB: 0
-      PORT: 8083
+      HTTP_PORT: 8083
+      RABBITMQ_URL: amqp://bookstore:dev_password@rabbitmq:5672/
+      RABBITMQ_EXCHANGE: bookstore.events
     ports:
       - "8083:8083"
     depends_on:
@@ -289,15 +293,17 @@ services:
       - bookstore-network
     restart: unless-stopped
 
-  # Notification Service (Node.js)
+  # Notification Service (Go)
   notification-service:
     build:
       context: ./services/notification-service
       dockerfile: Dockerfile
     container_name: notification-service
     environment:
-      PORT: 8089
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      HTTP_PORT: 8089
+      RABBITMQ_URL: amqp://bookstore:dev_password@rabbitmq:5672/
+      RABBITMQ_EXCHANGE: bookstore.events
+      RABBITMQ_QUEUE: notification-service
     ports:
       - "8089:8089"
     depends_on:

@@ -31,6 +31,7 @@ export default function Home() {
       return response.data;
     },
     enabled: isAuthenticated,
+    retry: false,
   });
 
   // Fetch trending books
@@ -80,6 +81,7 @@ export default function Home() {
         !!recommendationsData &&
         !!recommendationsData.recommendations &&
         recommendationsData.recommendations.length > 0,
+      retry: false,
     });
 
   // Fetch full book details for trending books

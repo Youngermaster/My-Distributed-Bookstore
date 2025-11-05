@@ -1,20 +1,24 @@
-FROM node:18-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-COPY tsconfig.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
+# syntax=docker/dockerfile:1
 
-FROM node:18-alpine
+FROM golang:1.21-alpine AS build
+
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/src/templates ./dist/templates 2>/dev/null || true
-RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
-USER nodejs
-EXPOSE 8087
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:8087/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
-CMD ["node", "dist/index.js"]
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o notification-service ./cmd/server
+
+FROM gcr.io/distroless/base-debian12
+
+WORKDIR /app
+
+COPY --from=build /app/notification-service /app/notification-service
+
+ENV HTTP_PORT=8089
+
+EXPOSE 8089
+
+ENTRYPOINT ["/app/notification-service"]

@@ -12,6 +12,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
+import { toast } from "@/lib/toast";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -25,9 +26,11 @@ export default function Login() {
 
     try {
       await login({ email, password });
+      toast.success("Welcome back to Ohara Bookstore!");
       navigate({ to: "/" });
     } catch (error) {
       console.error("Login failed:", error);
+      toast.error("Login failed. Please check your credentials.");
     }
   };
 

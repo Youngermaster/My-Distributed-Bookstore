@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart-service
+  namespace: bookstore-dev
+  labels:
+    app: cart-service
+spec:
+  selector:
+    app: cart-service
+  ports:
+  - name: http
+    port: 8083
+    targetPort: 8083
+    protocol: TCP

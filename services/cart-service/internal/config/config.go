@@ -20,9 +20,12 @@ type Config struct {
 	RedisDB       int
 
 	// Cart Settings
-	CartTTLHours         int
-	MaxItemsPerCart      int
-	MaxQuantityPerItem   int
+	CartTTLHours       int
+	MaxItemsPerCart    int
+	MaxQuantityPerItem int
+
+	RabbitMQURL      string
+	RabbitMQExchange string
 }
 
 func Load() (*Config, error) {
@@ -37,15 +40,17 @@ func Load() (*Config, error) {
 	return &Config{
 		HTTPPort: getEnv("HTTP_PORT", "8083"),
 		Env:      getEnv("ENV", "development"),
-		
+
 		RedisHost:     getEnv("REDIS_HOST", "localhost"),
 		RedisPort:     getEnv("REDIS_PORT", "6379"),
 		RedisPassword: getEnv("REDIS_PASSWORD", ""),
 		RedisDB:       redisDB,
-		
+
 		CartTTLHours:       cartTTL,
 		MaxItemsPerCart:    maxItems,
 		MaxQuantityPerItem: maxQty,
+		RabbitMQURL:        getEnv("RABBITMQ_URL", "amqp://bookstore:dev_password@rabbitmq:5672/"),
+		RabbitMQExchange:   getEnv("RABBITMQ_EXCHANGE", "bookstore.events"),
 	}, nil
 }
 
@@ -56,6 +61,8 @@ func (c *Config) Print() {
 	log.Printf("Redis: %s:%s (DB: %d)", c.RedisHost, c.RedisPort, c.RedisDB)
 	log.Printf("Cart TTL: %d hours", c.CartTTLHours)
 	log.Printf("Max Items: %d, Max Qty: %d", c.MaxItemsPerCart, c.MaxQuantityPerItem)
+	log.Printf("RabbitMQ URL: %s", c.RabbitMQURL)
+	log.Printf("RabbitMQ Exchange: %s", c.RabbitMQExchange)
 	log.Println("=================================")
 }
 

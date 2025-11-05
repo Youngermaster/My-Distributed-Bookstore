@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"strconv"
 	"sync"
 	"time"
 
@@ -64,7 +65,7 @@ func (rl *RateLimiter) Middleware() fiber.Handler {
 
 		// Check rate limit
 		if info.count >= rl.max {
-			c.Set("X-RateLimit-Limit", string(rune(rl.max)))
+			c.Set("X-RateLimit-Limit", strconv.Itoa(rl.max))
 			c.Set("X-RateLimit-Remaining", "0")
 			c.Set("X-RateLimit-Reset", info.resetTime.Format(time.RFC3339))
 
@@ -78,8 +79,8 @@ func (rl *RateLimiter) Middleware() fiber.Handler {
 		info.count++
 
 		// Set rate limit headers
-		c.Set("X-RateLimit-Limit", string(rune(rl.max)))
-		c.Set("X-RateLimit-Remaining", string(rune(rl.max-info.count)))
+		c.Set("X-RateLimit-Limit", strconv.Itoa(rl.max))
+		c.Set("X-RateLimit-Remaining", strconv.Itoa(rl.max-info.count))
 		c.Set("X-RateLimit-Reset", info.resetTime.Format(time.RFC3339))
 
 		return c.Next()

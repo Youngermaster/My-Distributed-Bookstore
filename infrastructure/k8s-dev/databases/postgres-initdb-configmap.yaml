@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-scripts
+  namespace: bookstore-dev
+data:
+  01-create-databases.sql: |
+    CREATE DATABASE reviews_db;
+    CREATE DATABASE inventory_db;
