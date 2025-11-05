@@ -11,9 +11,46 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/youngermaster/distributed-bookstore/order-service/internal/config"
+	"github.com/youngermaster/distributed-bookstore/order-service/internal/domain"
+	httphandler "github.com/youngermaster/distributed-bookstore/order-service/internal/handler/http"
+	"github.com/youngermaster/distributed-bookstore/order-service/internal/repository"
+	"github.com/youngermaster/distributed-bookstore/order-service/internal/service"
 )
 
 func main() {
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+	cfg.Print()
+
+	// Initialize database connection
+	db, err := config.InitDatabase(cfg)
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+
+	// Get underlying SQL database for connection management
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalf("Failed to get database instance: %v", err)
+	}
+	defer sqlDB.Close()
+
+	// Run database migrations
+	if err := db.AutoMigrate(&domain.Order{}, &domain.OrderItem{}); err != nil {
+		log.Fatalf("Failed to run migrations: %v", err)
+	}
+	log.Println("Database migrations completed")
+
+	// Initialize repository
+	orderRepo := repository.NewOrderRepository(db)
+
+	// Initialize service
+	orderService := service.NewOrderService(orderRepo, cfg.DefaultPageSize, cfg.MaxPageSize)
+
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
 		AppName:      "order-service",
@@ -23,95 +60,46 @@ func main() {
 	// Global middleware
 	app.Use(recover.New())
 	app.Use(logger.New(logger.Config{
-		Format: "[]  -   - \n",
+		Format:     "${time} | ${status} | ${latency} | ${method} ${path}\n",
+		TimeFormat: "2006-01-02 15:04:05",
 	}))
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*",
-		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
+		AllowMethods: "GET,POST,PUT,DELETE,PATCH,OPTIONS",
 		AllowHeaders: "Origin,Content-Type,Accept,Authorization",
 	}))
 
-	// Health check endpoint
-	app.Get("/health", healthCheckHandler)
-	app.Get("/ready", readinessHandler)
+	// Health check endpoints
+	app.Get("/health", createHealthCheckHandler(db))
+	app.Get("/ready", createReadinessHandler(db))
 
-	// TODO: Initialize database connection
-	// TODO: Run database migrations
-	// TODO: Initialize Redis connection
-	// TODO: Initialize RabbitMQ connection
-	// TODO: Setup gRPC server
-	// TODO: Register HTTP routes
-	// TODO: Setup event consumers
-	// TODO: Initialize Jaeger tracer
-	// TODO: Setup Prometheus metrics
-
-	// API routes group
-	api := app.Group("/api/v1")
-	
-	// TODO: Add route handlers here
-	_ = api // Remove this line when routes are added
+	// Setup HTTP routes
+	httphandler.SetupRoutes(app, orderService)
 
 	// Get port from environment or use default
-	httpPort := os.Getenv("HTTP_PORT")
-	if httpPort == "" {
-		httpPort = "8084"
-	}
+	httpPort := cfg.HTTPPort
 
 	// Start HTTP server in goroutine
 	go func() {
 		addr := fmt.Sprintf(":%s", httpPort)
-		log.Printf("order-service HTTP server starting on %s", addr)
+		log.Printf("🚀 order-service HTTP server starting on %s", addr)
 		if err := app.Listen(addr); err != nil {
 			log.Fatalf("Failed to start HTTP server: %v", err)
 		}
 	}()
 
-	// TODO: Start gRPC server in separate goroutine
-
-	log.Printf("order-service started successfully")
-	log.Printf("HTTP Port: %s", httpPort)
-	log.Printf("gRPC Port: 50054")
-
-	// Wait for interrupt signal for graceful shutdown
+	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("Shutting down order-service...")
+	log.Println("🛑 Shutting down order-service...")
 
-	// Graceful shutdown
 	if err := app.Shutdown(); err != nil {
 		log.Printf("Error during HTTP server shutdown: %v", err)
 	}
 
-	// TODO: Stop gRPC server
-	// TODO: Close database connections
-	// TODO: Close Redis connections
-	// TODO: Close RabbitMQ connections
-
 	log.Println("order-service stopped gracefully")
-}
-
-func healthCheckHandler(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{
-		"status":  "ok",
-		"service": "order-service",
-	})
-}
-
-func readinessHandler(c *fiber.Ctx) error {
-	// TODO: Check database connection
-	// TODO: Check Redis connection
-	// TODO: Check RabbitMQ connection
-	
-	return c.JSON(fiber.Map{
-		"status": "ready",
-		"checks": fiber.Map{
-			"database": "ok",
-			"redis":    "ok",
-			"rabbitmq": "ok",
-		},
-	})
 }
 
 func customErrorHandler(c *fiber.Ctx, err error) error {
@@ -121,7 +109,39 @@ func customErrorHandler(c *fiber.Ctx, err error) error {
 	}
 
 	return c.Status(code).JSON(fiber.Map{
-		"error": err.Error(),
-		"code":  code,
+		"error":   "Internal Server Error",
+		"message": err.Error(),
 	})
+}
+
+func createHealthCheckHandler(db interface{}) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"status":  "healthy",
+			"service": "order-service",
+		})
+	}
+}
+
+func createReadinessHandler(db interface{}) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		// Check database connection
+		if gormDB, ok := db.(interface{ DB() (interface{}, error) }); ok {
+			if sqlDB, err := gormDB.DB(); err == nil {
+				if pinger, ok := sqlDB.(interface{ Ping() error }); ok {
+					if err := pinger.Ping(); err != nil {
+						return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+							"status":   "not ready",
+							"database": "unhealthy",
+						})
+					}
+				}
+			}
+		}
+
+		return c.JSON(fiber.Map{
+			"status":   "ready",
+			"database": "healthy",
+		})
+	}
 }

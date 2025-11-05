@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-service
+  namespace: bookstore-dev
+  labels:
+    app: admin-service
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8090
+    targetPort: 8090
+    protocol: TCP
+  selector:
+    app: admin-service

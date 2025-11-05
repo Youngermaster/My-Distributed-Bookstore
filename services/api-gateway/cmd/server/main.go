@@ -25,11 +25,25 @@ func main() {
 	}
 	cfg.Print()
 
-	// Initialize catalog service client
+	// Initialize service clients
 	catalogClient := proxy.NewCatalogClient(cfg.CatalogServiceURL, cfg.RequestTimeout)
+	userClient := proxy.NewUserClient(cfg.UserServiceURL, cfg.RequestTimeout)
+	cartClient := proxy.NewCartClient(cfg.CartServiceURL, cfg.RequestTimeout)
+	orderClient := proxy.NewOrderClient(cfg.OrderServiceURL, cfg.RequestTimeout)
+	recommendationClient := proxy.NewRecommendationClient(cfg.RecommendationServiceURL, cfg.RequestTimeout)
+	adminClient := proxy.NewAdminClient(cfg.AdminServiceURL, cfg.RequestTimeout)
+	reviewClient := proxy.NewReviewClient(cfg.ReviewServiceURL, cfg.RequestTimeout)
+	inventoryClient := proxy.NewInventoryClient(cfg.InventoryServiceURL, cfg.RequestTimeout)
 
 	// Initialize handlers
 	catalogHandler := handler.NewCatalogHandler(catalogClient)
+	userHandler := handler.NewUserHandler(userClient)
+	cartHandler := handler.NewCartHandler(cartClient)
+	orderHandler := handler.NewOrderHandler(orderClient)
+	recommendationHandler := handler.NewRecommendationHandler(recommendationClient)
+	adminHandler := handler.NewAdminHandler(adminClient)
+	reviewHandler := handler.NewReviewHandler(reviewClient)
+	inventoryHandler := handler.NewInventoryHandler(inventoryClient)
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
@@ -55,12 +69,12 @@ func main() {
 	if cfg.RateLimitEnabled {
 		rateLimiter := middleware.NewRateLimiter(cfg.RateLimitMax, cfg.RateLimitWindow)
 		app.Use(rateLimiter.Middleware())
-		log.Printf("✅ Rate limiting enabled: %d requests per %v", cfg.RateLimitMax, cfg.RateLimitWindow)
+		log.Printf("Rate limiting enabled: %d requests per %v", cfg.RateLimitMax, cfg.RateLimitWindow)
 	}
 
 	// Health check endpoints
-	app.Get("/health", createHealthCheckHandler(catalogClient))
-	app.Get("/ready", createReadinessHandler(catalogClient))
+	app.Get("/health", createHealthCheckHandler(catalogClient, userClient, cartClient, orderClient, recommendationClient, adminClient, reviewClient, inventoryClient))
+	app.Get("/ready", createReadinessHandler(catalogClient, userClient, cartClient, orderClient, recommendationClient, adminClient, reviewClient, inventoryClient))
 
 	// API routes
 	api := app.Group("/api/v1")
@@ -87,6 +101,37 @@ func main() {
 	// Publishers
 	catalog.All("/publishers*", catalogHandler.ProxyPublishers)
 
+	// User routes (proxy to user-service)
+	users := api.Group("/users")
+	users.All("*", userHandler.ProxyUserRequest)
+
+	// Cart routes (proxy to cart-service)
+	cart := api.Group("/cart")
+	cart.All("*", cartHandler.ProxyCartRequest)
+
+	// Order routes (proxy to order-service)
+	orders := api.Group("/orders")
+	orders.All("*", orderHandler.ProxyOrderRequest)
+
+	// Recommendation routes (proxy to recommendation-service)
+	recommendations := api.Group("/recommendations")
+	recommendations.Get("/me", recommendationHandler.GetMyRecommendations)
+	recommendations.Get("/similar/:bookId", recommendationHandler.GetSimilarBooks)
+	recommendations.Get("/trending", recommendationHandler.GetTrendingBooks)
+	recommendations.All("*", recommendationHandler.ProxyRecommendationRequest)
+
+	// Review routes (proxy to review-service)
+	reviews := api.Group("/reviews")
+	reviews.All("*", reviewHandler.ProxyReviewRequest)
+
+	// Inventory routes (proxy to inventory-service)
+	inventory := api.Group("/inventory")
+	inventory.All("*", inventoryHandler.ProxyInventoryRequest)
+
+	// Admin routes (proxy to admin-service) - requires authentication and admin role
+	admin := api.Group("/admin")
+	admin.All("*", adminHandler.ProxyAdminRequest)
+
 	// Root endpoint
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
@@ -94,13 +139,23 @@ func main() {
 			"version": "1.0.0",
 			"status":  "running",
 			"endpoints": fiber.Map{
-				"health":     "/health",
-				"ready":      "/ready",
-				"catalog":    "/api/v1/catalog",
-				"books":      "/api/v1/catalog/books",
-				"authors":    "/api/v1/catalog/authors",
-				"categories": "/api/v1/catalog/categories",
-				"publishers": "/api/v1/catalog/publishers",
+				"health":             "/health",
+				"ready":              "/ready",
+				"catalog":            "/api/v1/catalog",
+				"books":              "/api/v1/catalog/books",
+				"authors":            "/api/v1/catalog/authors",
+				"categories":         "/api/v1/catalog/categories",
+				"publishers":         "/api/v1/catalog/publishers",
+				"users":              "/api/v1/users",
+				"auth":               "/api/v1/users/auth",
+				"wishlist":           "/api/v1/users/me/wishlist",
+				"cart":               "/api/v1/cart",
+				"orders":             "/api/v1/orders",
+				"recommendations":    "/api/v1/recommendations",
+				"my_recommendations": "/api/v1/recommendations/me",
+				"trending":           "/api/v1/recommendations/trending",
+				"reviews":            "/api/v1/reviews",
+				"inventory":          "/api/v1/inventory",
 			},
 		})
 	})
@@ -114,35 +169,56 @@ func main() {
 		}
 	}()
 
-	log.Printf("✅ API Gateway started successfully")
-	log.Printf("📡 Server: http://localhost:%s", cfg.Port)
-	log.Printf("🏥 Health: http://localhost:%s/health", cfg.Port)
-	log.Printf("📚 Catalog: http://localhost:%s/api/v1/catalog", cfg.Port)
-	log.Printf("🔗 Catalog Service: %s", cfg.CatalogServiceURL)
+	log.Printf("API Gateway started successfully")
+	log.Printf("Server: http://localhost:%s", cfg.Port)
+	log.Printf("Health: http://localhost:%s/health", cfg.Port)
+	log.Printf("\nAvailable Routes:")
+	log.Printf("  Catalog: http://localhost:%s/api/v1/catalog", cfg.Port)
+	log.Printf("  Users: http://localhost:%s/api/v1/users", cfg.Port)
+	log.Printf("  Cart: http://localhost:%s/api/v1/cart", cfg.Port)
+	log.Printf("  Orders: http://localhost:%s/api/v1/orders", cfg.Port)
+	log.Printf("  Recommendations: http://localhost:%s/api/v1/recommendations", cfg.Port)
+	log.Printf("  Admin: http://localhost:%s/api/v1/admin", cfg.Port)
+	log.Printf("  Reviews: http://localhost:%s/api/v1/reviews", cfg.Port)
+	log.Printf("  Inventory: http://localhost:%s/api/v1/inventory", cfg.Port)
 
 	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
 
-	log.Println("⏳ Shutting down API Gateway...")
+	log.Println("Shutting down API Gateway...")
 	if err := app.Shutdown(); err != nil {
 		log.Printf("❌ Error during shutdown: %v", err)
 	}
 
-	log.Println("✅ API Gateway stopped gracefully")
+	log.Println("API Gateway stopped gracefully")
 }
 
-func createHealthCheckHandler(catalogClient *proxy.CatalogClient) fiber.Handler {
+func createHealthCheckHandler(
+	catalogClient *proxy.CatalogClient,
+	userClient *proxy.UserClient,
+	cartClient *proxy.CartClient,
+	orderClient *proxy.OrderClient,
+	recommendationClient *proxy.RecommendationClient,
+	adminClient *proxy.AdminClient,
+	reviewClient *proxy.ReviewClient,
+	inventoryClient *proxy.InventoryClient,
+) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Check catalog service health
-		catalogHealthy := true
-		if err := catalogClient.HealthCheck(); err != nil {
-			catalogHealthy = false
-		}
+		// Check all services health
+		catalogHealthy := catalogClient.HealthCheck() == nil
+		userHealthy := userClient.HealthCheck() == nil
+		cartHealthy := cartClient.HealthCheck() == nil
+		orderHealthy := orderClient.HealthCheck() == nil
+		recommendationHealthy := recommendationClient.HealthCheck() == nil
+		adminHealthy := adminClient.HealthCheck() == nil
+		reviewHealthy := reviewClient.HealthCheck() == nil
+		inventoryHealthy := inventoryClient.HealthCheck() == nil
 
+		allHealthy := catalogHealthy && userHealthy && cartHealthy && orderHealthy && recommendationHealthy && adminHealthy && reviewHealthy && inventoryHealthy
 		overallStatus := "ok"
-		if !catalogHealthy {
+		if !allHealthy {
 			overallStatus = "degraded"
 		}
 
@@ -150,33 +226,76 @@ func createHealthCheckHandler(catalogClient *proxy.CatalogClient) fiber.Handler 
 			"status":  overallStatus,
 			"service": "api-gateway",
 			"services": fiber.Map{
-				"catalog": fiber.Map{
-					"healthy": catalogHealthy,
-				},
+				"catalog":        fiber.Map{"healthy": catalogHealthy},
+				"user":           fiber.Map{"healthy": userHealthy},
+				"cart":           fiber.Map{"healthy": cartHealthy},
+				"order":          fiber.Map{"healthy": orderHealthy},
+				"recommendation": fiber.Map{"healthy": recommendationHealthy},
+				"admin":          fiber.Map{"healthy": adminHealthy},
+				"review":         fiber.Map{"healthy": reviewHealthy},
+				"inventory":      fiber.Map{"healthy": inventoryHealthy},
 			},
 		})
 	}
 }
 
-func createReadinessHandler(catalogClient *proxy.CatalogClient) fiber.Handler {
+func createReadinessHandler(
+	catalogClient *proxy.CatalogClient,
+	userClient *proxy.UserClient,
+	cartClient *proxy.CartClient,
+	orderClient *proxy.OrderClient,
+	recommendationClient *proxy.RecommendationClient,
+	adminClient *proxy.AdminClient,
+	reviewClient *proxy.ReviewClient,
+	inventoryClient *proxy.InventoryClient,
+) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Check if catalog service is reachable
-		catalogReady := true
+		// Check all critical services are reachable
+		notReadyServices := []string{}
+
 		if err := catalogClient.HealthCheck(); err != nil {
-			catalogReady = false
+			notReadyServices = append(notReadyServices, "catalog")
+		}
+		if err := userClient.HealthCheck(); err != nil {
+			notReadyServices = append(notReadyServices, "user")
+		}
+		if err := cartClient.HealthCheck(); err != nil {
+			notReadyServices = append(notReadyServices, "cart")
+		}
+		if err := orderClient.HealthCheck(); err != nil {
+			notReadyServices = append(notReadyServices, "order")
+		}
+		if err := recommendationClient.HealthCheck(); err != nil {
+			notReadyServices = append(notReadyServices, "recommendation")
+		}
+		if err := adminClient.HealthCheck(); err != nil {
+			notReadyServices = append(notReadyServices, "admin")
+		}
+		if err := reviewClient.HealthCheck(); err != nil {
+			notReadyServices = append(notReadyServices, "review")
+		}
+		if err := inventoryClient.HealthCheck(); err != nil {
+			notReadyServices = append(notReadyServices, "inventory")
 		}
 
-		if !catalogReady {
+		if len(notReadyServices) > 0 {
 			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
-				"status": "not ready",
-				"reason": "catalog service is not available",
+				"status":               "not ready",
+				"unavailable_services": notReadyServices,
 			})
 		}
 
 		return c.JSON(fiber.Map{
 			"status": "ready",
 			"services": fiber.Map{
-				"catalog": "ready",
+				"catalog":        "ready",
+				"user":           "ready",
+				"cart":           "ready",
+				"order":          "ready",
+				"recommendation": "ready",
+				"admin":          "ready",
+				"review":         "ready",
+				"inventory":      "ready",
 			},
 		})
 	}

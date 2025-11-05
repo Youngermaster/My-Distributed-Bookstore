@@ -17,6 +17,8 @@ from pydantic import BaseModel, Field, ConfigDict, field_validator
 class InventoryBase(BaseModel):
     """Base schema for inventory data."""
     book_id: UUID = Field(..., description="ID of the book")
+    title: str = Field(..., min_length=1, max_length=200, description="Title of the book")
+    short_description: str = Field(..., min_length=1, max_length=500, description="Short description of the book")
     available_quantity: int = Field(..., ge=0, description="Available stock quantity")
     reserved_quantity: int = Field(default=0, ge=0, description="Reserved stock quantity")
     reorder_level: int = Field(default=10, ge=0, description="Low stock threshold")
@@ -25,6 +27,8 @@ class InventoryBase(BaseModel):
 class InventoryCreate(BaseModel):
     """Schema for creating new inventory record."""
     book_id: UUID = Field(..., description="ID of the book")
+    title: str = Field(..., min_length=1, max_length=200, description="Title of the book")
+    short_description: str = Field(..., min_length=1, max_length=500, description="Short description of the book")
     initial_quantity: int = Field(..., ge=0, description="Initial stock quantity")
     reorder_level: int = Field(default=10, ge=0, description="Low stock threshold")
 
@@ -32,6 +36,8 @@ class InventoryCreate(BaseModel):
         json_schema_extra={
             "example": {
                 "book_id": "123e4567-e89b-12d3-a456-426614174000",
+                "title": "Don Quijote de la Mancha",
+                "short_description": "La obra maestra de Miguel de Cervantes",
                 "initial_quantity": 100,
                 "reorder_level": 15
             }
@@ -92,6 +98,8 @@ class InventoryResponse(BaseModel):
 class LowStockItem(BaseModel):
     """Schema for low stock alert."""
     book_id: UUID
+    title: str
+    short_description: str
     available_quantity: int
     reorder_level: int
     deficit: int = Field(..., description="How many units below reorder level")

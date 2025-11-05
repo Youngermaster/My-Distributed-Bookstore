@@ -1,19 +1,18 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
 echo "=========================================="
-echo "Deploying Bookstore to Kubernetes"
+echo "Deploying Distributed Bookstore (Dev)"
 echo "=========================================="
 echo ""
 
 # Colors for output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Function to print colored output
+# Logging helpers
 print_info() {
     echo -e "${GREEN}[INFO]${NC} $1"
 }
@@ -22,100 +21,98 @@ print_warning() {
     echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# Check if minikube is running
-print_info "Checking if minikube is running..."
+# Ensure Minikube is running
+print_info "Checking Minikube status..."
 if ! minikube status &> /dev/null; then
-    print_warning "Minikube is not running. Starting minikube..."
+    print_warning "Minikube is not running. Starting Minikube..."
     minikube start
 else
-    print_info "Minikube is already running"
+    print_info "Minikube is already running."
 fi
 
-# Configure docker environment to use minikube's docker daemon
-print_info "Configuring Docker to use minikube's daemon..."
-eval $(minikube docker-env)
+# Point Docker at the Minikube daemon
+print_info "Configuring Docker to use Minikube's daemon..."
+eval "$(minikube docker-env)"
 
-# Build Docker images
-print_info "Building Docker images..."
+# Build Docker images for all services
+print_info "Building service images (this can take a few minutes)..."
+IMAGE_SPECS=(
+    "catalog-service|../../services/catalog-service"
+    "user-service|../../services/user-service"
+    "cart-service|../../services/cart-service"
+    "order-service|../../services/order-service"
+    "recommendation-service|../../services/recommendation-service"
+    "inventory-service|../../services/inventory-service"
+    "review-service|../../services/review-service"
+    "api-gateway|../../services/api-gateway"
+    "frontend|../../frontend/customer-app"
+)
 
-print_info "Building Catalog Service..."
-docker build -t catalog-service:latest ../../services/catalog-service/
+for spec in "${IMAGE_SPECS[@]}"; do
+    IFS='|' read -r image path <<< "$spec"
+    print_info "Building ${image}:latest from ${path}..."
+    docker build -t "${image}:latest" "${path}"
+done
 
-print_info "Building API Gateway..."
-docker build -t api-gateway:latest ../../services/api-gateway/
-
-print_info "Building Frontend..."
-docker build -t frontend:latest ../../frontend/customer-app/
-
-# Deploy to Kubernetes
-print_info "Deploying to Kubernetes..."
-
-# Create namespace
-print_info "Creating namespace..."
+# Namespace & shared configuration
+print_info "Creating/Updating namespace..."
 kubectl apply -f namespaces/development.yaml
-
-# Wait a moment for namespace to be ready
 sleep 2
 
-# Create secrets and configmaps
-print_info "Creating secrets and configmaps..."
+print_info "Applying global secrets..."
 kubectl apply -f secrets/
+
+print_info "Applying global configmaps..."
 kubectl apply -f configmaps/
 
-# Deploy database
+# Data stores
 print_info "Deploying PostgreSQL..."
 kubectl apply -f databases/
 
-# Wait for PostgreSQL to be ready
-print_info "Waiting for PostgreSQL to be ready..."
+print_info "Waiting for PostgreSQL to become ready..."
 kubectl wait --for=condition=ready pod -l app=postgres -n bookstore-dev --timeout=300s
 
-# Deploy services
-print_info "Deploying Catalog Service..."
-kubectl apply -f services/catalog-service/
+print_info "Deploying Redis for cart/recommendations..."
+kubectl apply -f messaging/redis/
 
-# Wait for Catalog Service to be ready
-print_info "Waiting for Catalog Service to be ready..."
-kubectl wait --for=condition=ready pod -l app=catalog-service -n bookstore-dev --timeout=300s
+print_info "Waiting for Redis to become ready..."
+kubectl wait --for=condition=ready pod -l app=redis -n bookstore-dev --timeout=300s
 
-print_info "Deploying API Gateway..."
-kubectl apply -f services/api-gateway/
+# Helper to deploy services and wait for readiness
+deploy_component() {
+    local friendly_name="$1"
+    local manifest_path="$2"
+    local label_selector="$3"
 
-# Wait for API Gateway to be ready
-print_info "Waiting for API Gateway to be ready..."
-kubectl wait --for=condition=ready pod -l app=api-gateway -n bookstore-dev --timeout=300s
+    print_info "Deploying ${friendly_name}..."
+    kubectl apply -f "${manifest_path}"
 
-# Deploy frontend
-print_info "Deploying Frontend..."
-kubectl apply -f frontend/
+    print_info "Waiting for ${friendly_name} pods to become ready..."
+    kubectl wait --for=condition=ready pod -l "${label_selector}" -n bookstore-dev --timeout=300s
+}
 
-# Wait for Frontend to be ready
-print_info "Waiting for Frontend to be ready..."
-kubectl wait --for=condition=ready pod -l app=frontend -n bookstore-dev --timeout=300s
+# Core services
+deploy_component "Catalog Service" "services/catalog-service/" "app=catalog-service"
+deploy_component "User Service" "services/user-service/" "app=user-service"
+deploy_component "Cart Service" "services/cart-service/" "app=cart-service"
+deploy_component "Order Service" "services/order-service/" "app=order-service"
+deploy_component "Recommendation Service" "services/recommendation-service/" "app=recommendation-service"
+deploy_component "Inventory Service" "services/inventory-service/" "app=inventory-service"
+deploy_component "Review Service" "services/review-service/" "app=review-service"
+deploy_component "API Gateway" "services/api-gateway/" "app=api-gateway"
+deploy_component "Frontend" "frontend/" "app=frontend"
 
 echo ""
+MINIKUBE_IP=$(minikube ip)
+BASE_URL="http://${MINIKUBE_IP}:30080"
 echo "=========================================="
 print_info "Deployment completed successfully!"
 echo "=========================================="
 echo ""
-
-# Display access information
 print_info "Access Information:"
-echo ""
-MINIKUBE_IP=$(minikube ip)
 echo "  Frontend:    http://${MINIKUBE_IP}:30000"
-echo "  API Gateway: http://${MINIKUBE_IP}:30080"
+echo "  API Gateway: ${BASE_URL}"
 echo ""
-print_info "To view pod status, run:"
+print_info "To inspect pods:"
 echo "  kubectl get pods -n bookstore-dev"
-echo ""
-print_info "To view logs, run:"
-echo "  kubectl logs -f <pod-name> -n bookstore-dev"
-echo ""
-print_info "To view services, run:"
-echo "  kubectl get services -n bookstore-dev"
 echo ""

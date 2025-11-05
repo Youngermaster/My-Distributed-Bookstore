@@ -156,4 +156,4 @@ EOF
 
 chmod +x $SERVICE_DIR/cmd/server/main.go
 
-echo "✅ Go service $SERVICE_NAME scaffolded successfully!"
+echo "Go service $SERVICE_NAME scaffolded successfully!"

@@ -69,9 +69,9 @@ app.use((err: Error, req: Request, res: Response, next: any) => {
 
 // Start HTTP server
 app.listen(PORT, () => {
-  console.log(`✅ Payment Service HTTP server running on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🔌 gRPC server should be running on port ${GRPC_PORT}`);
+  console.log(`Payment Service HTTP server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV}`);
+  console.log(`gRPC server should be running on port ${GRPC_PORT}`);
 });
 
 // Graceful shutdown

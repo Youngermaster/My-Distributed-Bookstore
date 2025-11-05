@@ -40,11 +40,12 @@ From the `infrastructure/k8s` directory, run:
 ```
 
 This script will:
+
 1. Configure Docker to use Minikube's Docker daemon
-2. Build all Docker images (Catalog Service, API Gateway, Frontend)
+2. Build all Docker images (Catalog, User, Cart, Order, Recommendation, API Gateway, Frontend)
 3. Create the Kubernetes namespace
 4. Deploy secrets and configmaps
-5. Deploy PostgreSQL StatefulSet
+5. Deploy PostgreSQL and Redis dependencies
 6. Deploy all microservices
 7. Display access information
 
@@ -64,6 +65,7 @@ minikube ip
 ```
 
 Then access:
+
 - **Frontend**: `http://<MINIKUBE_IP>:30000`
 - **API Gateway**: `http://<MINIKUBE_IP>:30080`
 
@@ -75,16 +77,19 @@ Check the status of all pods:
 kubectl get pods -n bookstore-dev
 ```
 
-Expected output:
+Expected output (example):
+
 ```
-NAME                               READY   STATUS    RESTARTS   AGE
-api-gateway-xxxxxxxxxx-xxxxx       1/1     Running   0          2m
-api-gateway-xxxxxxxxxx-xxxxx       1/1     Running   0          2m
-catalog-service-xxxxxxxxxx-xxxxx   1/1     Running   0          3m
-catalog-service-xxxxxxxxxx-xxxxx   1/1     Running   0          3m
-frontend-xxxxxxxxxx-xxxxx          1/1     Running   0          1m
-frontend-xxxxxxxxxx-xxxxx          1/1     Running   0          1m
-postgres-0                         1/1     Running   0          4m
+NAME                            READY   STATUS    RESTARTS   AGE
+api-gateway-xxxxxxxxxx-xxxxx    1/1     Running   0          2m
+cart-service-xxxxxxxxxx-xxxxx   1/1     Running   0          2m
+catalog-service-xxxxxxxxxx-xxxx 1/1     Running   0          3m
+frontend-xxxxxxxxxx-xxxxx       1/1     Running   0          1m
+order-service-xxxxxxxxxx-xxxxx  1/1     Running   0          2m
+recommendation-service-xxxxx    1/1     Running   0          2m
+user-service-xxxxxxxxxx-xxxxx   1/1     Running   0          2m
+postgres-0                      1/1     Running   0          4m
+redis-xxxxxxxxxx-xxxxx          1/1     Running   0          2m
 ```
 
 Check services:
@@ -92,6 +97,18 @@ Check services:
 ```bash
 kubectl get services -n bookstore-dev
 ```
+
+### 5. Run Smoke Tests (optional)
+
+After the deployment is up, you can execute the automated smoke checks against the API Gateway:
+
+```bash
+./smoke-tests.sh          # Uses the Minikube IP automatically
+# or
+./smoke-tests.sh http://<gateway-host>:<port>
+```
+
+These tests hit the health endpoints, exercise user registration, cart and order flows, and verify recommendation routes.
 
 ## Manual Deployment Steps
 
@@ -283,6 +300,7 @@ kubectl describe pod <pod-name> -n bookstore-dev
 ```
 
 Common issues:
+
 - **ImagePullBackOff**: Image not found. Make sure you've built the images using minikube's Docker daemon (`eval $(minikube docker-env)`)
 - **CrashLoopBackOff**: Container is crashing. Check logs with `kubectl logs <pod-name> -n bookstore-dev`
 
@@ -357,15 +375,18 @@ minikube start
 The deployment consists of:
 
 1. **PostgreSQL StatefulSet** (1 replica)
+
    - Persistent storage for catalog data
    - Service: `postgres:5432`
 
 2. **Catalog Service Deployment** (2 replicas)
+
    - HTTP API on port 8081
    - gRPC API on port 50051
    - Service: `catalog-service:8081`, `catalog-service:50051`
 
 3. **API Gateway Deployment** (2 replicas)
+
    - HTTP API on port 8080
    - Exposed via NodePort 30080
    - Service: `api-gateway:8080`
@@ -380,6 +401,7 @@ The deployment consists of:
 ### Secrets
 
 Located in `secrets/`:
+
 - `postgres-credentials.yaml`: Database credentials
 - `jwt-secret.yaml`: JWT signing secret
 
@@ -388,6 +410,7 @@ Located in `secrets/`:
 ### ConfigMaps
 
 Located in `configmaps/`:
+
 - `api-gateway-config.yaml`: API Gateway configuration
 - `catalog-service-config.yaml`: Catalog Service configuration
 - `frontend-config.yaml`: Frontend configuration
@@ -397,18 +420,22 @@ Located in `configmaps/`:
 Current resource limits:
 
 **PostgreSQL**:
+
 - Requests: 256Mi memory, 250m CPU
 - Limits: 512Mi memory, 500m CPU
 
 **Catalog Service**:
+
 - Requests: 128Mi memory, 100m CPU
 - Limits: 512Mi memory, 500m CPU
 
 **API Gateway**:
+
 - Requests: 128Mi memory, 100m CPU
 - Limits: 512Mi memory, 500m CPU
 
 **Frontend**:
+
 - Requests: 64Mi memory, 50m CPU
 - Limits: 256Mi memory, 200m CPU
 

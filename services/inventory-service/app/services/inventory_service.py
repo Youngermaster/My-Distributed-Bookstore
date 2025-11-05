@@ -13,7 +13,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import List, Tuple, Optional
 from uuid import UUID
-from sqlalchemy import select, func, and_, or_
+from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.inventory import Inventory, Reservation, StockMovement
 from app.schemas.inventory import (
@@ -63,6 +63,8 @@ class InventoryService:
         # Create inventory
         inventory = Inventory(
             book_id=inventory_data.book_id,
+            title=inventory_data.title,
+            short_description=inventory_data.short_description,
             available_quantity=inventory_data.initial_quantity,
             reserved_quantity=0,
             reorder_level=inventory_data.reorder_level,
@@ -195,6 +197,8 @@ class InventoryService:
         low_stock_items = [
             LowStockItem(
                 book_id=inv.book_id,
+                title=inv.title,
+                short_description=inv.short_description,
                 available_quantity=inv.available_quantity,
                 reorder_level=inv.reorder_level,
                 deficit=inv.reorder_level - inv.available_quantity
@@ -289,7 +293,8 @@ class InventoryService:
     @staticmethod
     async def release_reservation(
         db: AsyncSession,
-        order_id: UUID
+        order_id: UUID,
+        mark_expired: bool = False,
     ) -> int:
         """
         Release a reservation (order cancelled or expired).
@@ -319,6 +324,8 @@ class InventoryService:
 
         total_released = 0
 
+        target_status = "expired" if mark_expired else "released"
+
         for reservation in reservations:
             # Update inventory
             inventory = await InventoryService.get_inventory(db, reservation.book_id)
@@ -328,7 +335,7 @@ class InventoryService:
                 inventory.updated_at = datetime.utcnow()
 
             # Update reservation status
-            reservation.status = "released"
+            reservation.status = target_status
             total_released += reservation.quantity
 
             # Record movement
@@ -338,13 +345,18 @@ class InventoryService:
                 quantity=reservation.quantity,
                 reference_type="order",
                 reference_id=order_id,
-                notes=f"Reservation released for order {order_id}"
+                notes=(
+                    f"Reservation expired for order {order_id}"
+                    if mark_expired
+                    else f"Reservation released for order {order_id}"
+                ),
             )
             db.add(movement)
 
         await db.commit()
 
-        logger.info(f"Released {total_released} units for order {order_id}")
+        action = "expired" if mark_expired else "released"
+        logger.info(f"{action.capitalize()} {total_released} units for order {order_id}")
         return total_released
 
     @staticmethod
@@ -415,29 +427,39 @@ class InventoryService:
         Returns:
             Number of reservations expired
         """
-        query = select(Reservation).where(
-            and_(
-                Reservation.status == "pending",
-                Reservation.expires_at <= datetime.utcnow()
+        query = (
+            select(Reservation.order_id)
+            .where(
+                and_(
+                    Reservation.status == "pending",
+                    Reservation.expires_at <= datetime.utcnow(),
+                )
             )
+            .distinct()
         )
         result = await db.execute(query)
-        expired_reservations = result.scalars().all()
+        order_ids = [row.order_id for row in result.all()]
 
-        count = 0
-        for reservation in expired_reservations:
+        expired_count = 0
+
+        for order_id in order_ids:
             try:
-                await InventoryService.release_reservation(db, reservation.order_id)
-                reservation.status = "expired"
-                count += 1
-            except Exception as e:
-                logger.error(f"Failed to expire reservation for order {reservation.order_id}: {e}")
+                released = await InventoryService.release_reservation(
+                    db,
+                    order_id,
+                    mark_expired=True,
+                )
+                if released > 0:
+                    expired_count += 1
+            except ValueError:
                 continue
+            except Exception as exc:
+                logger.error(f"Failed to expire reservation for order {order_id}: {exc}")
 
-        if count > 0:
-            logger.info(f"Expired {count} old reservations")
+        if expired_count > 0:
+            logger.info(f"Expired reservations for {expired_count} order(s)")
 
-        return count
+        return expired_count
 
     # ========================================================================
     # Stock Movements

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: admin-service-config
+  namespace: bookstore-dev
+data:
+  user-service-url: "user-service:8082"
+  catalog-service-url: "catalog-service:8081"
+  order-service-url: "order-service:8084"
+  cart-service-url: "cart-service:8083"
+  inventory-service-url: "inventory-service:8086"
+  recommendation-service-url: "recommendation-service:8089"
+  cors-allow-origins: "*"
+  db-max-idle-conns: "10"
+  db-max-open-conns: "100"

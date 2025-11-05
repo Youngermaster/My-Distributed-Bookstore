@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { booksAPI, wishlistAPI } from "@/lib/api";
+import { booksAPI, wishlistAPI, cartAPI, recommendationsAPI } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
+import { useCartStore } from "@/store/cartStore";
+import { createId } from "@/lib/id";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,17 +13,44 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Heart } from "lucide-react";
+import { Heart, ShoppingCart } from "lucide-react";
+import BookGrid from "@/components/BookGrid";
+import { ReviewStats, ReviewList, ReviewForm } from "@/components/reviews";
+import { getReviewsForBook, getReviewStatsForBook } from "@/mocks/reviews";
+import { type Book } from "@/types/book";
 
 export default function BookDetail() {
   const { id } = useParams({ from: "/books/$id" });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuthStore();
+  const { cartId, setCartId } = useCartStore();
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
+
+  // Initialize cart ID if not exists
+  useEffect(() => {
+    if (!cartId) {
+      const newCartId = createId();
+      setCartId(newCartId);
+    }
+  }, [cartId, setCartId]);
+
+  // Track book view when component mounts
+  useEffect(() => {
+    if (id && isAuthenticated) {
+      recommendationsAPI
+        .trackInteraction({
+          book_id: id,
+          interaction_type: "view",
+        })
+        .catch((error) => {
+          console.error("Failed to track view:", error);
+        });
+    }
+  }, [id, isAuthenticated]);
 
   const { data: bookData, isLoading } = useQuery({
     queryKey: ["book", id],
@@ -29,16 +58,90 @@ export default function BookDetail() {
     enabled: !!id,
   });
 
+  // Fetch similar books
+  const { data: similarBooksData, isLoading: similarBooksLoading } = useQuery({
+    queryKey: ["recommendations", "similar", id],
+    queryFn: () =>
+      recommendationsAPI.getSimilar(id!, { limit: 6 }).then((res) => res.data),
+    enabled: !!id,
+  });
+
+  // Helper function to fetch books by IDs
+  const fetchBooksByIds = async (bookIds: string[]): Promise<Book[]> => {
+    const bookPromises = bookIds.map((bookId) =>
+      booksAPI.get(bookId).then((res) => res.data)
+    );
+    const books = await Promise.all(bookPromises);
+    return books.filter((book): book is Book => book !== null);
+  };
+
+  // Fetch full book details for similar books
+  const { data: similarBooks } = useQuery({
+    queryKey: [
+      "books",
+      "similar",
+      similarBooksData?.recommendations.map((r) => r.book_id),
+    ],
+    queryFn: () =>
+      fetchBooksByIds(
+        similarBooksData?.recommendations.map((r) => r.book_id) || []
+      ),
+    enabled: !!similarBooksData && similarBooksData.recommendations.length > 0,
+  });
+
   const addToWishlistMutation = useMutation({
     mutationFn: (bookId: string) => wishlistAPI.add(bookId),
-    onSuccess: () => {
+    onSuccess: (_, bookId) => {
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
       setMessage({ type: "success", text: "Added to wishlist!" });
       setTimeout(() => setMessage(null), 3000);
+
+      // Track wishlist interaction
+      if (isAuthenticated) {
+        recommendationsAPI
+          .trackInteraction({
+            book_id: bookId,
+            interaction_type: "wishlist",
+          })
+          .catch((error) => {
+            console.error("Failed to track wishlist interaction:", error);
+          });
+      }
     },
     onError: (error: any) => {
       const errorMsg =
         error.response?.data?.message || "Failed to add to wishlist";
+      setMessage({ type: "error", text: errorMsg });
+      setTimeout(() => setMessage(null), 3000);
+    },
+  });
+
+  const addToCartMutation = useMutation({
+    mutationFn: ({ bookId, price }: { bookId: string; price: number }) =>
+      cartAPI.addItem(cartId!, {
+        book_id: bookId,
+        quantity: 1,
+        price,
+      }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["cart", cartId] });
+      setMessage({ type: "success", text: "Added to cart!" });
+      setTimeout(() => setMessage(null), 3000);
+
+      // Track add to cart interaction
+      if (isAuthenticated) {
+        recommendationsAPI
+          .trackInteraction({
+            book_id: variables.bookId,
+            interaction_type: "add_to_cart",
+          })
+          .catch((error) => {
+            console.error("Failed to track cart interaction:", error);
+          });
+      }
+    },
+    onError: (error: any) => {
+      const errorMsg = error.response?.data?.message || "Failed to add to cart";
       setMessage({ type: "error", text: errorMsg });
       setTimeout(() => setMessage(null), 3000);
     },
@@ -51,6 +154,12 @@ export default function BookDetail() {
     }
     if (id) {
       addToWishlistMutation.mutate(id);
+    }
+  };
+
+  const handleAddToCart = () => {
+    if (id && bookData) {
+      addToCartMutation.mutate({ bookId: id, price: bookData.price });
     }
   };
 
@@ -169,6 +278,20 @@ export default function BookDetail() {
 
                 <div className="flex gap-2">
                   <Button
+                    onClick={handleAddToCart}
+                    disabled={
+                      book.stock_quantity === 0 || addToCartMutation.isPending
+                    }
+                    className="flex-1"
+                  >
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    {addToCartMutation.isPending
+                      ? "Adding..."
+                      : book.stock_quantity === 0
+                      ? "Out of Stock"
+                      : "Add to Cart"}
+                  </Button>
+                  <Button
                     onClick={handleAddToWishlist}
                     variant="outline"
                     disabled={addToWishlistMutation.isPending}
@@ -244,6 +367,40 @@ export default function BookDetail() {
             </Card>
           </div>
         </div>
+
+        {/* Reviews Section */}
+        <div className="mt-12 space-y-6">
+          <h2 className="text-3xl font-bold text-gray-900">Reviews</h2>
+
+          {/* Review Stats */}
+          <ReviewStats stats={getReviewStatsForBook(id!)} />
+
+          {/* Review Form */}
+          <ReviewForm
+            bookId={id!}
+            bookTitle={book.title}
+            isAuthenticated={isAuthenticated}
+          />
+
+          {/* Review List */}
+          <ReviewList reviews={getReviewsForBook(id!)} />
+        </div>
+
+        {/* Similar Books Section */}
+        {similarBooks && similarBooks.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-6">
+              Similar Books You Might Like
+            </h2>
+            <BookGrid
+              books={similarBooks}
+              isLoading={similarBooksLoading}
+              onBookClick={(book) =>
+                navigate({ to: "/books/$id", params: { id: book.id } })
+              }
+            />
+          </div>
+        )}
       </div>
     </div>
   );

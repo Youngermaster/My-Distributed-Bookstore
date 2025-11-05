@@ -1,0 +1,30 @@
+### Crear un nuevo inventario
+POST http://localhost:8086/api/v1/inventory
+Content-Type: application/json
+
+{
+    "book_id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "Don Quijote de la Mancha",
+    "short_description": "La obra maestra de Miguel de Cervantes sobre un caballero que enloquece leyendo novelas de caballería",
+    "initial_quantity": 100,
+    "reorder_level": 10
+}
+
+### Obtener inventario por ID de libro
+GET http://localhost:8086/api/v1/inventory/123e4567-e89b-12d3-a456-426614174000
+
+### Ajustar stock
+POST http://localhost:8086/api/v1/inventory/123e4567-e89b-12d3-a456-426614174000/adjust
+Content-Type: application/json
+
+{
+    "adjustment_type": "set",
+    "quantity": 15
+}
+
+### Obtener items con stock bajo
+GET http://localhost:8086/api/v1/inventory/low-stock
+
+
+###
+GET http://localhost:8086/
