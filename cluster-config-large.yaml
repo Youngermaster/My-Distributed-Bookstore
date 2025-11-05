@@ -1,0 +1,44 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: my-bookstore
+  region: us-east-1
+  version: "1.28"
+
+# Use existing VPC (AWS Academy restriction)
+vpc:
+  id: "vpc-0718312e7f365e4b8"
+  subnets:
+    public:
+      us-east-1a: { id: subnet-0b0a497aca8761715 }
+      us-east-1b: { id: subnet-08d684911389ce0b4 }
+      us-east-1d: { id: subnet-0229448bb3e7df8fd }
+
+# Use existing IAM role (AWS Academy provides LabRole)
+iam:
+  withOIDC: false
+  serviceRoleARN: arn:aws:iam::905418472239:role/LabRole
+
+# Node group with bigger instances
+managedNodeGroups:
+  - name: bookstore-workers
+    instanceType: t3.medium  # Upgraded from t3.small
+    desiredCapacity: 3       # Increased from 2
+    minSize: 2
+    maxSize: 4
+    volumeSize: 30           # Increased from 20GB
+    labels:
+      role: worker
+    tags:
+      Environment: production
+      Project: distributed-bookstore
+    iam:
+      instanceRoleARN: arn:aws:iam::905418472239:role/LabRole
+
+# Install required addons
+addons:
+  - name: vpc-cni
+  - name: kube-proxy
+  - name: coredns
+  - name: aws-ebs-csi-driver  # Pre-install EBS CSI driver
