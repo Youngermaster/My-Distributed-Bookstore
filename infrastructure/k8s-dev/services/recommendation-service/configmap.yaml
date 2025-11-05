@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: recommendation-service-config
+  namespace: bookstore-dev
+data:
+  PORT: "8089"
+  DEBUG: "true"
+  CATALOG_SERVICE_URL: "http://catalog-service:8081"
+  USER_SERVICE_URL: "http://user-service:8082"
+  ORDER_SERVICE_URL: "http://order-service:8084"
+  REDIS_URL: "redis://redis:6379/0"
+  CACHE_TTL: "3600"
+  DEFAULT_RECOMMENDATIONS_COUNT: "10"
+  MIN_INTERACTIONS_FOR_COLLABORATIVE: "3"
+  TAG_WEIGHT: "0.4"
+  COLLABORATIVE_WEIGHT: "0.4"
+  POPULAR_WEIGHT: "0.2"
+  LOG_LEVEL: "INFO"

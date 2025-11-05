@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cart-service-config
+  namespace: bookstore-dev
+data:
+  HTTP_PORT: "8083"
+  ENV: "development"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: ""
+  REDIS_DB: "0"
+  CART_TTL_HOURS: "168"
+  MAX_ITEMS_PER_CART: "50"
+  MAX_QUANTITY_PER_ITEM: "99"
+  LOG_LEVEL: "debug"
+  RABBITMQ_URL: "amqp://bookstore:dev_password@rabbitmq:5672/"
+  RABBITMQ_EXCHANGE: "bookstore.events"

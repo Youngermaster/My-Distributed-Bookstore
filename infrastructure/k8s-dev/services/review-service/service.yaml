@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: review-service
+  namespace: bookstore-dev
+  labels:
+    app: review-service
+spec:
+  selector:
+    app: review-service
+  ports:
+  - name: http
+    port: 8088
+    targetPort: 8088
+    protocol: TCP
