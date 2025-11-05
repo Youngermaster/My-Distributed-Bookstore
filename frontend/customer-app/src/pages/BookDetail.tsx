@@ -18,7 +18,7 @@ import BookGrid from "@/components/BookGrid";
 import { ReviewStats, ReviewList, ReviewForm } from "@/components/reviews";
 import { useReviewService } from "@/services";
 import { type Book } from "@/types/book";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 export default function BookDetail() {
   const { id } = useParams({ from: "/books/$id" });

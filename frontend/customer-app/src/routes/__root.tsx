@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 const queryClient = new QueryClient({
   defaultOptions: {

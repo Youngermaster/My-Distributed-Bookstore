@@ -66,8 +66,8 @@ func Load() (*Config, error) {
 		JWTExpiration: getDurationEnv("JWT_EXPIRATION", 24*time.Hour),
 
 		// Rate Limiting
-		RateLimitEnabled: getBoolEnv("RATE_LIMIT_ENABLED", true),
-		RateLimitMax:     getIntEnv("RATE_LIMIT_MAX", 100),
+		RateLimitEnabled: getBoolEnv("RATE_LIMIT_ENABLED", false),
+		RateLimitMax:     getIntEnv("RATE_LIMIT_MAX", 900),
 		RateLimitWindow:  getDurationEnv("RATE_LIMIT_WINDOW", 1*time.Minute),
 
 		// Timeouts

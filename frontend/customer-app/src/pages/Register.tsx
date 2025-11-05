@@ -12,7 +12,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 export default function Register() {
   const navigate = useNavigate();

@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import type {
   LoginRequest,
   RegisterRequest,
@@ -72,12 +72,21 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config as AxiosRequestConfig & {
+      _retry?: boolean;
+    };
 
-    if (error.response?.status === 401 && originalRequest) {
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/users/auth/refresh")
+    ) {
       const refreshToken = localStorage.getItem("refresh_token");
 
       if (refreshToken) {
+        originalRequest._retry = true;
+
         try {
           const { data } = await axios.post<RefreshTokenResponse>(
             `${api.defaults.baseURL}/api/v1/users/auth/refresh`,
@@ -87,7 +96,11 @@ api.interceptors.response.use(
           localStorage.setItem("token", data.access_token);
           localStorage.setItem("refresh_token", data.refresh_token);
 
-          originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
+          originalRequest.headers = {
+            ...(originalRequest.headers ?? {}),
+            Authorization: `Bearer ${data.access_token}`,
+          };
+
           return api(originalRequest);
         } catch (refreshError) {
           localStorage.removeItem("token");
