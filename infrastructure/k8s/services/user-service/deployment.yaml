@@ -1,15 +1,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: catalog-service
+  name: user-service
   namespace: bookstore-dev
   labels:
-    app: catalog-service
+    app: user-service
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: catalog-service
+      app: user-service
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -18,28 +18,36 @@ spec:
   template:
     metadata:
       labels:
-        app: catalog-service
+        app: user-service
     spec:
       containers:
-      - name: catalog-service
-        image: 905418472239.dkr.ecr.us-east-1.amazonaws.com/catalog-service:latest
-        imagePullPolicy: Always
+      - name: user-service
+        image: 905418472239.dkr.ecr.us-east-1.amazonaws.com/user-service:latest
+        imagePullPolicy: Always  # Change to Always for EKS with ECR
         ports:
-        - name: http
-          containerPort: 8081
-          protocol: TCP
-        - name: grpc
-          containerPort: 50051
-          protocol: TCP
+        - containerPort: 8082
+          name: http
         env:
-        - name: DATABASE_URL
+        - name: DB_HOST
+          value: "postgres"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_USER
+          value: "userservice"
+        - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: postgres-credentials
-              key: DATABASE_URL
-        envFrom:
-        - configMapRef:
-            name: catalog-service-config
+              key: user_password
+        - name: DB_NAME
+          value: "userdb"
+        - name: PORT
+          value: "8082"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: secret
         resources:
           requests:
             memory: "128Mi"
@@ -50,7 +58,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 8081
+            port: 8082
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -58,7 +66,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /health
-            port: 8081
+            port: 8082
           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 3

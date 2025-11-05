@@ -1,15 +1,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: catalog-service
+  name: order-service
   namespace: bookstore-dev
   labels:
-    app: catalog-service
+    app: order-service
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: catalog-service
+      app: order-service
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -18,28 +18,31 @@ spec:
   template:
     metadata:
       labels:
-        app: catalog-service
+        app: order-service
     spec:
       containers:
-      - name: catalog-service
-        image: 905418472239.dkr.ecr.us-east-1.amazonaws.com/catalog-service:latest
-        imagePullPolicy: Always
+      - name: order-service
+        image: 905418472239.dkr.ecr.us-east-1.amazonaws.com/order-service:latest
+        imagePullPolicy: Always  # Change to Always for EKS with ECR
         ports:
-        - name: http
-          containerPort: 8081
-          protocol: TCP
-        - name: grpc
-          containerPort: 50051
-          protocol: TCP
+        - containerPort: 8084
+          name: http
         env:
-        - name: DATABASE_URL
+        - name: DB_HOST
+          value: "postgres"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_USER
+          value: "orderuser"
+        - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: postgres-credentials
-              key: DATABASE_URL
-        envFrom:
-        - configMapRef:
-            name: catalog-service-config
+              key: order_password
+        - name: DB_NAME
+          value: "orderdb"
+        - name: PORT
+          value: "8084"
         resources:
           requests:
             memory: "128Mi"
@@ -50,7 +53,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 8081
+            port: 8084
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -58,7 +61,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /health
-            port: 8081
+            port: 8084
           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 3
