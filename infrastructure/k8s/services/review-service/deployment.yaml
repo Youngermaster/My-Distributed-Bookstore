@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
       - name: review-service
-        image: review-service:latest
-        imagePullPolicy: Never
+        image: 905418472239.dkr.ecr.us-east-1.amazonaws.com/review-service:latest
+        imagePullPolicy: Always
         ports:
         - name: http
           containerPort: 8088

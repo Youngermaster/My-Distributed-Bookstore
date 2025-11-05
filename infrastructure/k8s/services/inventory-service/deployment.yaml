@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
       - name: inventory-service
-        image: inventory-service:latest
-        imagePullPolicy: Never
+        image: 905418472239.dkr.ecr.us-east-1.amazonaws.com/inventory-service:latest
+        imagePullPolicy: Always
         ports:
         - name: http
           containerPort: 8086
