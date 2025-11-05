@@ -14,3 +14,5 @@ data:
   MAX_ITEMS_PER_CART: "50"
   MAX_QUANTITY_PER_ITEM: "99"
   LOG_LEVEL: "debug"
+  RABBITMQ_URL: "amqp://bookstore:dev_password@rabbitmq:5672/"
+  RABBITMQ_EXCHANGE: "bookstore.events"

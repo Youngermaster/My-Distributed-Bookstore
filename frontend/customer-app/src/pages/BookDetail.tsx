@@ -16,15 +16,18 @@ import {
 import { Heart, ShoppingCart } from "lucide-react";
 import BookGrid from "@/components/BookGrid";
 import { ReviewStats, ReviewList, ReviewForm } from "@/components/reviews";
-import { getReviewsForBook, getReviewStatsForBook } from "@/mocks/reviews";
+import { useReviewService } from "@/services";
 import { type Book } from "@/types/book";
+import { toast } from "sonner";
 
 export default function BookDetail() {
   const { id } = useParams({ from: "/books/$id" });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { cartId, setCartId } = useCartStore();
+  const { useBookReviews, useBookReviewStats, useVoteReview, useCreateReview } =
+    useReviewService();
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -76,18 +79,30 @@ export default function BookDetail() {
   };
 
   // Fetch full book details for similar books
+  const recommendationIds =
+    similarBooksData?.recommendations?.map(
+      (recommendation) => recommendation.book_id
+    ) ?? [];
+
   const { data: similarBooks } = useQuery({
-    queryKey: [
-      "books",
-      "similar",
-      similarBooksData?.recommendations.map((r) => r.book_id),
-    ],
-    queryFn: () =>
-      fetchBooksByIds(
-        similarBooksData?.recommendations.map((r) => r.book_id) || []
-      ),
-    enabled: !!similarBooksData && similarBooksData.recommendations.length > 0,
+    queryKey: ["books", "similar", recommendationIds],
+    queryFn: () => fetchBooksByIds(recommendationIds),
+    enabled: recommendationIds.length > 0,
   });
+
+  // Reviews
+  const bookId = id ?? "";
+  const { data: reviewListData, isLoading: reviewsLoading } = useBookReviews(
+    bookId,
+    1,
+    10
+  );
+  const { data: reviewStatsData, isLoading: reviewStatsLoading } =
+    useBookReviewStats(bookId);
+  const voteReviewMutation = useVoteReview();
+  const createReviewMutation = useCreateReview();
+
+  const reviews = reviewListData?.reviews ?? [];
 
   const addToWishlistMutation = useMutation({
     mutationFn: (bookId: string) => wishlistAPI.add(bookId),
@@ -95,6 +110,7 @@ export default function BookDetail() {
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
       setMessage({ type: "success", text: "Added to wishlist!" });
       setTimeout(() => setMessage(null), 3000);
+      toast.success("Added to wishlist.");
 
       // Track wishlist interaction
       if (isAuthenticated) {
@@ -113,6 +129,7 @@ export default function BookDetail() {
         error.response?.data?.message || "Failed to add to wishlist";
       setMessage({ type: "error", text: errorMsg });
       setTimeout(() => setMessage(null), 3000);
+      toast.error(errorMsg);
     },
   });
 
@@ -127,6 +144,7 @@ export default function BookDetail() {
       queryClient.invalidateQueries({ queryKey: ["cart", cartId] });
       setMessage({ type: "success", text: "Added to cart!" });
       setTimeout(() => setMessage(null), 3000);
+      toast.success("Added to cart.");
 
       // Track add to cart interaction
       if (isAuthenticated) {
@@ -144,11 +162,13 @@ export default function BookDetail() {
       const errorMsg = error.response?.data?.message || "Failed to add to cart";
       setMessage({ type: "error", text: errorMsg });
       setTimeout(() => setMessage(null), 3000);
+      toast.error(errorMsg);
     },
   });
 
   const handleAddToWishlist = () => {
     if (!isAuthenticated) {
+      toast.info("Please log in to add items to your wishlist.");
       navigate({ to: "/login" });
       return;
     }
@@ -161,6 +181,100 @@ export default function BookDetail() {
     if (id && bookData) {
       addToCartMutation.mutate({ bookId: id, price: bookData.price });
     }
+  };
+
+  const handleReviewHelpful = (reviewId: string) => {
+    if (!id) {
+      return;
+    }
+
+    if (!isAuthenticated || !user?.id) {
+      setMessage({ type: "error", text: "Please log in to vote on reviews." });
+      setTimeout(() => setMessage(null), 3000);
+      toast.error("Please log in to vote on reviews.");
+      if (!isAuthenticated) {
+        navigate({ to: "/login" });
+      }
+      return;
+    }
+
+    if (voteReviewMutation.isPending) {
+      return;
+    }
+
+    voteReviewMutation.mutate(
+      {
+        reviewId,
+        bookId: id,
+        payload: {
+          user_id: user.id,
+          is_helpful: true,
+        },
+      },
+      {
+        onSuccess: () => {
+          setMessage({ type: "success", text: "Thanks for your feedback!" });
+          setTimeout(() => setMessage(null), 3000);
+          toast.success("Thanks for your feedback!");
+        },
+        onError: () => {
+          setMessage({
+            type: "error",
+            text: "Unable to record your vote right now.",
+          });
+          setTimeout(() => setMessage(null), 3000);
+          toast.error("Unable to record your vote right now.");
+        },
+      }
+    );
+  };
+
+  const handleReviewSubmit = async (data: {
+    rating: number;
+    title: string;
+    content: string;
+  }) => {
+    if (!id || !user?.id) {
+      if (!isAuthenticated) {
+        navigate({ to: "/login" });
+        return;
+      }
+
+      setMessage({ type: "error", text: "We couldn't verify your account." });
+      setTimeout(() => setMessage(null), 3000);
+      toast.error("We couldn't verify your account.");
+      return;
+    }
+
+    await createReviewMutation.mutateAsync(
+      {
+        book_id: id,
+        user_id: user.id,
+        rating: data.rating,
+        title: data.title,
+        content: data.content,
+      },
+      {
+        onSuccess: () => {
+          setMessage({
+            type: "success",
+            text: "Review submitted successfully.",
+          });
+          setTimeout(() => setMessage(null), 3000);
+          toast.success("Review submitted successfully.");
+        },
+        onError: () => {
+          setMessage({
+            type: "error",
+            text: "We couldn't submit your review right now. Please try again shortly.",
+          });
+          setTimeout(() => setMessage(null), 3000);
+          toast.error(
+            "We couldn't submit your review right now. Please try again shortly."
+          );
+        },
+      }
+    );
   };
 
   if (isLoading) {
@@ -373,17 +487,37 @@ export default function BookDetail() {
           <h2 className="text-3xl font-bold text-gray-900">Reviews</h2>
 
           {/* Review Stats */}
-          <ReviewStats stats={getReviewStatsForBook(id!)} />
+          {reviewStatsLoading ? (
+            <div className="text-muted-foreground">
+              Loading review insights...
+            </div>
+          ) : reviewStatsData ? (
+            <ReviewStats stats={reviewStatsData} />
+          ) : (
+            <div className="text-muted-foreground">
+              No review data available yet.
+            </div>
+          )}
 
           {/* Review Form */}
           <ReviewForm
             bookId={id!}
             bookTitle={book.title}
             isAuthenticated={isAuthenticated}
+            isSubmitting={createReviewMutation.isPending}
+            onSubmit={handleReviewSubmit}
           />
 
           {/* Review List */}
-          <ReviewList reviews={getReviewsForBook(id!)} />
+          {reviewsLoading ? (
+            <div className="text-muted-foreground">Loading reviews...</div>
+          ) : (
+            <ReviewList
+              reviews={reviews}
+              onHelpful={handleReviewHelpful}
+              isVoting={voteReviewMutation.isPending}
+            />
+          )}
         </div>
 
         {/* Similar Books Section */}

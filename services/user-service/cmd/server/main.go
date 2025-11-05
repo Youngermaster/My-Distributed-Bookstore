@@ -6,20 +6,21 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/google/uuid"
 	"github.com/youngermaster/distributed-bookstore/user-service/internal/config"
 	"github.com/youngermaster/distributed-bookstore/user-service/internal/database"
 	"github.com/youngermaster/distributed-bookstore/user-service/internal/dto"
+	"github.com/youngermaster/distributed-bookstore/user-service/internal/events"
 	"github.com/youngermaster/distributed-bookstore/user-service/internal/middleware"
 	"github.com/youngermaster/distributed-bookstore/user-service/internal/repository"
 	"github.com/youngermaster/distributed-bookstore/user-service/internal/service"
 	"github.com/youngermaster/distributed-bookstore/user-service/pkg/jwt"
 	"github.com/youngermaster/distributed-bookstore/user-service/pkg/password"
-	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 )
 
 var validate = validator.New()
@@ -58,10 +59,18 @@ func main() {
 	jwtService := jwt.NewJWTService(cfg.JWTSecret, cfg.JWTAccessDuration, cfg.JWTRefreshDuration)
 	passwordSvc := password.NewService(cfg.BcryptCost)
 
+	var eventPublisher *events.Publisher
+	if pub, err := events.NewPublisher(cfg.RabbitMQURL, cfg.RabbitMQExchange); err != nil {
+		log.Printf("Warning: failed to initialize RabbitMQ publisher: %v", err)
+	} else {
+		eventPublisher = pub
+		defer eventPublisher.Close()
+	}
+
 	// Initialize services
-	authService := service.NewAuthService(userRepo, roleRepo, sessionRepo, jwtService, passwordSvc)
+	authService := service.NewAuthService(userRepo, roleRepo, sessionRepo, jwtService, passwordSvc, eventPublisher)
 	userService := service.NewUserService(userRepo, addressRepo, passwordSvc)
-	wishlistService := service.NewWishlistService(wishlistRepo)
+	wishlistService := service.NewWishlistService(wishlistRepo, eventPublisher)
 
 	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
@@ -91,23 +100,16 @@ func main() {
 
 	// Auth routes (public)
 	auth := api.Group("/auth")
-	auth.Post("/register", func(c *fiber.Ctx) error {
-		return registerHandler(c, authService)
-	})
-	auth.Post("/login", func(c *fiber.Ctx) error {
-		return loginHandler(c, authService)
-	})
-	auth.Post("/refresh", func(c *fiber.Ctx) error {
-		return refreshTokenHandler(c, authService)
-	})
-	auth.Post("/logout", middleware.AuthMiddleware(jwtService), func(c *fiber.Ctx) error {
-		return logoutHandler(c, authService)
-	})
+	registerAuthRoutes(auth, authService, jwtService)
+
+	// Mirror auth routes under /api/v1/users/auth for gateway compatibility
+	userAuth := api.Group("/users/auth")
+	registerAuthRoutes(userAuth, authService, jwtService)
 
 	// User routes (protected)
 	users := api.Group("/users")
 	users.Use(middleware.AuthMiddleware(jwtService))
-	
+
 	users.Get("/me", func(c *fiber.Ctx) error {
 		return getMeHandler(c, userService)
 	})
@@ -169,6 +171,21 @@ func main() {
 	log.Println("Server stopped")
 }
 
+func registerAuthRoutes(router fiber.Router, authService *service.AuthService, jwtService *jwt.JWTService) {
+	router.Post("/register", func(c *fiber.Ctx) error {
+		return registerHandler(c, authService)
+	})
+	router.Post("/login", func(c *fiber.Ctx) error {
+		return loginHandler(c, authService)
+	})
+	router.Post("/refresh", func(c *fiber.Ctx) error {
+		return refreshTokenHandler(c, authService)
+	})
+	router.Post("/logout", middleware.AuthMiddleware(jwtService), func(c *fiber.Ctx) error {
+		return logoutHandler(c, authService)
+	})
+}
+
 // Handlers
 
 func registerHandler(c *fiber.Ctx, authService *service.AuthService) error {
@@ -181,19 +198,19 @@ func registerHandler(c *fiber.Ctx, authService *service.AuthService) error {
 
 	if err := validate.Struct(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
-			Error: "validation failed",
+			Error:   "validation failed",
 			Message: err.Error(),
 		})
 	}
 
-	user, err := authService.Register(req)
+	response, err := authService.Register(req)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
 			Error: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(user)
+	return c.Status(fiber.StatusCreated).JSON(response)
 }
 
 func loginHandler(c *fiber.Ctx, authService *service.AuthService) error {
@@ -503,7 +520,7 @@ func checkWishlistHandler(c *fiber.Ctx, wishlistService *service.WishlistService
 	}
 
 	return c.JSON(fiber.Map{
-		"exists": exists,
+		"exists":  exists,
 		"book_id": bookID,
 	})
 }

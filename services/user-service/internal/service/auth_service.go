@@ -1,12 +1,15 @@
 package service
 
 import (
+	"context"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/youngermaster/distributed-bookstore/user-service/internal/domain"
 	"github.com/youngermaster/distributed-bookstore/user-service/internal/dto"
+	"github.com/youngermaster/distributed-bookstore/user-service/internal/events"
 	"github.com/youngermaster/distributed-bookstore/user-service/internal/repository"
 	"github.com/youngermaster/distributed-bookstore/user-service/pkg/jwt"
 	"github.com/youngermaster/distributed-bookstore/user-service/pkg/password"
@@ -19,11 +22,12 @@ var (
 
 // AuthService handles authentication business logic
 type AuthService struct {
-	userRepo     *repository.UserRepository
-	roleRepo     *repository.RoleRepository
-	sessionRepo  *repository.SessionRepository
-	jwtService   *jwt.JWTService
-	passwordSvc  *password.Service
+	userRepo    *repository.UserRepository
+	roleRepo    *repository.RoleRepository
+	sessionRepo *repository.SessionRepository
+	jwtService  *jwt.JWTService
+	passwordSvc *password.Service
+	eventPub    *events.Publisher
 }
 
 // NewAuthService creates a new auth service
@@ -33,6 +37,7 @@ func NewAuthService(
 	sessionRepo *repository.SessionRepository,
 	jwtService *jwt.JWTService,
 	passwordSvc *password.Service,
+	eventPublisher *events.Publisher,
 ) *AuthService {
 	return &AuthService{
 		userRepo:    userRepo,
@@ -40,11 +45,12 @@ func NewAuthService(
 		sessionRepo: sessionRepo,
 		jwtService:  jwtService,
 		passwordSvc: passwordSvc,
+		eventPub:    eventPublisher,
 	}
 }
 
 // Register registers a new user
-func (s *AuthService) Register(req dto.RegisterRequest) (*dto.UserResponse, error) {
+func (s *AuthService) Register(req dto.RegisterRequest) (*dto.LoginResponse, error) {
 	// Hash password
 	passwordHash, err := s.passwordSvc.Hash(req.Password)
 	if err != nil {
@@ -75,7 +81,31 @@ func (s *AuthService) Register(req dto.RegisterRequest) (*dto.UserResponse, erro
 		return nil, err
 	}
 
-	return s.mapUserToResponse(user), nil
+	roleNames := make([]string, len(user.Roles))
+	for i, role := range user.Roles {
+		roleNames[i] = role.Name
+	}
+
+	tokenPair, err := s.jwtService.GenerateTokenPair(user.ID, user.Email, roleNames)
+	if err != nil {
+		return nil, err
+	}
+
+	response := &dto.LoginResponse{
+		AccessToken:  tokenPair.AccessToken,
+		RefreshToken: tokenPair.RefreshToken,
+		ExpiresAt:    tokenPair.ExpiresAt,
+		TokenType:    tokenPair.TokenType,
+		User:         *s.mapUserToResponse(user),
+	}
+
+	s.publishEvent(events.NewNotificationEvent("user.registered", "user-service").
+		WithUser(user.ID, user.Email).
+		WithPayload(map[string]interface{}{
+			"full_name": user.FullName,
+		}))
+
+	return response, nil
 }
 
 // Login authenticates a user and returns tokens
@@ -111,13 +141,21 @@ func (s *AuthService) Login(req dto.LoginRequest) (*dto.LoginResponse, error) {
 	user.LastLoginAt = &now
 	s.userRepo.Update(user)
 
-	return &dto.LoginResponse{
+	response := &dto.LoginResponse{
 		AccessToken:  tokenPair.AccessToken,
 		RefreshToken: tokenPair.RefreshToken,
 		ExpiresAt:    tokenPair.ExpiresAt,
 		TokenType:    tokenPair.TokenType,
 		User:         *s.mapUserToResponse(user),
-	}, nil
+	}
+
+	s.publishEvent(events.NewNotificationEvent("user.logged_in", "user-service").
+		WithUser(user.ID, user.Email).
+		WithPayload(map[string]interface{}{
+			"full_name": user.FullName,
+		}))
+
+	return response, nil
 }
 
 // RefreshToken generates new tokens from a refresh token
@@ -163,6 +201,16 @@ func (s *AuthService) ValidateToken(token string) (*jwt.Claims, error) {
 // Logout logs out a user (invalidates sessions)
 func (s *AuthService) Logout(userID uuid.UUID) error {
 	return s.sessionRepo.DeleteByUserID(userID)
+}
+
+func (s *AuthService) publishEvent(evt events.NotificationEvent) {
+	if s.eventPub == nil {
+		return
+	}
+
+	if err := s.eventPub.Publish(context.Background(), evt.EventType, evt); err != nil {
+		log.Printf("failed to publish auth event %s: %v", evt.EventType, err)
+	}
 }
 
 // mapUserToResponse converts domain user to response DTO

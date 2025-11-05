@@ -45,6 +45,7 @@ IMAGE_SPECS=(
     "inventory-service|../../services/inventory-service"
     "review-service|../../services/review-service"
     "api-gateway|../../services/api-gateway"
+    "notification-service|../../services/notification-service"
     "frontend|../../frontend/customer-app"
 )
 
@@ -78,6 +79,12 @@ kubectl apply -f messaging/redis/
 print_info "Waiting for Redis to become ready..."
 kubectl wait --for=condition=ready pod -l app=redis -n bookstore-dev --timeout=300s
 
+print_info "Deploying RabbitMQ..."
+kubectl apply -f messaging/rabbitmq/
+
+print_info "Waiting for RabbitMQ to become ready..."
+kubectl wait --for=condition=ready pod -l app=rabbitmq -n bookstore-dev --timeout=300s
+
 # Helper to deploy services and wait for readiness
 deploy_component() {
     local friendly_name="$1"
@@ -100,6 +107,7 @@ deploy_component "Recommendation Service" "services/recommendation-service/" "ap
 deploy_component "Inventory Service" "services/inventory-service/" "app=inventory-service"
 deploy_component "Review Service" "services/review-service/" "app=review-service"
 deploy_component "API Gateway" "services/api-gateway/" "app=api-gateway"
+deploy_component "Notification Service" "services/notification-service/" "app=notification-service"
 deploy_component "Frontend" "frontend/" "app=frontend"
 
 echo ""

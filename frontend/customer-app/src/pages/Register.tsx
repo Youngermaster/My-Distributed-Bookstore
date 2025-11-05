@@ -12,6 +12,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
+import { toast } from "sonner";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -45,9 +46,11 @@ export default function Register() {
 
     try {
       await register({ email, password, full_name: fullName });
+      toast.success("Account created! Welcome to Ohara Bookstore.");
       navigate({ to: "/" });
     } catch (error) {
       console.error("Registration failed:", error);
+      toast.error("Registration failed. Please try again.");
     }
   };
 

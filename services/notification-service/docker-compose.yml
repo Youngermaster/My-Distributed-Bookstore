@@ -7,14 +7,14 @@ services:
       dockerfile: Dockerfile
     container_name: notification-service
     ports:
-      - "8087:8087"
+      - "8089:8089"
     environment:
-      PORT: 8087
-      NODE_ENV: development
-      DATABASE_URL: postgresql://bookstore:dev_password@postgres:5432/notifications_db
+      HTTP_PORT: 8089
+      ENV: development
       RABBITMQ_URL: amqp://bookstore:dev_password@rabbitmq:5672/
-      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
-      FROM_EMAIL: noreply@bookstore.com
+      RABBITMQ_EXCHANGE: bookstore.events
+      RABBITMQ_QUEUE: notification-service
+      RABBITMQ_ROUTING_KEYS: user.*,wishlist.*,cart.*,order.*
     depends_on:
       postgres:
         condition: service_healthy

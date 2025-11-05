@@ -15,3 +15,5 @@ data:
   DB_MAX_IDLE_CONNS: "10"
   DB_MAX_OPEN_CONNS: "50"
   LOG_LEVEL: "debug"
+  RABBITMQ_URL: "amqp://bookstore:dev_password@rabbitmq:5672/"
+  RABBITMQ_EXCHANGE: "bookstore.events"

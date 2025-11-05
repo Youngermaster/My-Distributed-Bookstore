@@ -1,15 +1,20 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Star, ThumbsUp, BadgeCheck } from "lucide-react";
-import type { Review } from "@/mocks/reviews";
-import { formatReviewDate } from "@/mocks/reviews";
+import type { Review } from "@/types/review";
+import { formatReviewDate } from "@/utils/review";
 
 interface ReviewCardProps {
   review: Review;
   onHelpful?: (reviewId: string) => void;
+  disabled?: boolean;
 }
 
-export default function ReviewCard({ review, onHelpful }: ReviewCardProps) {
+export default function ReviewCard({
+  review,
+  onHelpful,
+  disabled = false,
+}: ReviewCardProps) {
   const {
     id,
     user_name,
@@ -21,6 +26,8 @@ export default function ReviewCard({ review, onHelpful }: ReviewCardProps) {
     created_at,
   } = review;
 
+  const displayName = user_name || review.user_id || "Anonymous reader";
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-4">
@@ -28,7 +35,9 @@ export default function ReviewCard({ review, onHelpful }: ReviewCardProps) {
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-semibold text-foreground">{user_name}</span>
+              <span className="font-semibold text-foreground">
+                {displayName}
+              </span>
               {verified_purchase && (
                 <div className="flex items-center gap-1 text-sm text-green-600">
                   <BadgeCheck className="h-4 w-4" />
@@ -73,6 +82,7 @@ export default function ReviewCard({ review, onHelpful }: ReviewCardProps) {
             size="sm"
             onClick={() => onHelpful?.(id)}
             className="text-muted-foreground hover:text-foreground"
+            disabled={disabled}
           >
             <ThumbsUp className="h-4 w-4 mr-2" />
             Helpful {helpful_votes > 0 && `(${helpful_votes})`}

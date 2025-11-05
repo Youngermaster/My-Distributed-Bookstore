@@ -7,16 +7,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import ReviewCard from "./ReviewCard";
-import type { Review } from "@/mocks/reviews";
+import type { Review } from "@/types/review";
 
 interface ReviewListProps {
   reviews: Review[];
   onHelpful?: (reviewId: string) => void;
+  isVoting?: boolean;
 }
 
 type SortOption = "recent" | "helpful" | "highest" | "lowest";
 
-export default function ReviewList({ reviews, onHelpful }: ReviewListProps) {
+export default function ReviewList({
+  reviews,
+  onHelpful,
+  isVoting = false,
+}: ReviewListProps) {
   const [sortBy, setSortBy] = useState<SortOption>("recent");
 
   const sortedReviews = [...reviews].sort((a, b) => {
@@ -72,7 +77,12 @@ export default function ReviewList({ reviews, onHelpful }: ReviewListProps) {
       {/* Reviews */}
       <div className="space-y-4">
         {sortedReviews.map((review) => (
-          <ReviewCard key={review.id} review={review} onHelpful={onHelpful} />
+          <ReviewCard
+            key={review.id}
+            review={review}
+            onHelpful={onHelpful}
+            disabled={isVoting}
+          />
         ))}
       </div>
     </div>

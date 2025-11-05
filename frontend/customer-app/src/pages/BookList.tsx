@@ -17,8 +17,8 @@ import type { BookFilters } from "@/types/book";
 
 export default function BookList() {
   const [filters, setFilters] = useState<BookFilters>({
-    limit: 20,
-    offset: 0,
+    page: 1,
+    page_size: 20,
   });
   const [searchTitle, setSearchTitle] = useState("");
 
@@ -34,34 +34,38 @@ export default function BookList() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setFilters((prev) => ({ ...prev, title: searchTitle, offset: 0 }));
+    setFilters((prev) => ({
+      ...prev,
+      title: searchTitle,
+      page: 1,
+    }));
   };
 
   const handleCategoryFilter = (categoryId: string) => {
     setFilters((prev) => ({
       ...prev,
       category_id: prev.category_id === categoryId ? undefined : categoryId,
-      offset: 0,
+      page: 1,
     }));
   };
 
   const handleNextPage = () => {
     setFilters((prev) => ({
       ...prev,
-      offset: (prev.offset || 0) + (prev.limit || 20),
+      page: (prev.page || 1) + 1,
     }));
   };
 
   const handlePrevPage = () => {
     setFilters((prev) => ({
       ...prev,
-      offset: Math.max(0, (prev.offset || 0) - (prev.limit || 20)),
+      page: Math.max(1, (prev.page || 1) - 1),
     }));
   };
 
-  const currentPage =
-    Math.floor((filters.offset || 0) / (filters.limit || 20)) + 1;
-  const totalPages = Math.ceil((booksData?.total || 0) / (filters.limit || 20));
+  const currentPage = booksData?.page || filters.page || 1;
+  const pageSize = booksData?.page_size || filters.page_size || 20;
+  const totalPages = Math.max(1, Math.ceil((booksData?.total || 0) / pageSize));
 
   return (
     <div className="min-h-screen bg-background">
@@ -170,7 +174,7 @@ export default function BookList() {
                 <Button
                   variant="outline"
                   onClick={handlePrevPage}
-                  disabled={currentPage === 1}
+                  disabled={currentPage <= 1}
                 >
                   Previous
                 </Button>
@@ -180,7 +184,7 @@ export default function BookList() {
                 <Button
                   variant="outline"
                   onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
+                  disabled={currentPage >= totalPages}
                 >
                   Next
                 </Button>

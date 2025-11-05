@@ -16,7 +16,8 @@ interface ReviewFormProps {
   bookId: string;
   bookTitle: string;
   isAuthenticated: boolean;
-  onSubmit?: (data: ReviewFormData) => void;
+  isSubmitting?: boolean;
+  onSubmit?: (data: ReviewFormData) => Promise<void> | void;
 }
 
 export interface ReviewFormData {
@@ -26,33 +27,47 @@ export interface ReviewFormData {
 }
 
 export default function ReviewForm({
-  bookId: _bookId, // Prefix with _ to indicate intentionally unused (for future integration)
+  bookId: _bookId,
   bookTitle,
   isAuthenticated,
+  isSubmitting = false,
   onSubmit,
 }: ReviewFormProps) {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (rating > 0 && title.trim() && content.trim()) {
-      onSubmit?.({
+    setFormError(null);
+    setFormSuccess(null);
+
+    if (rating <= 0 || !title.trim() || !content.trim()) {
+      setFormError("Please provide a rating, title, and review content.");
+      return;
+    }
+
+    try {
+      await onSubmit?.({
         rating,
         title: title.trim(),
         content: content.trim(),
       });
-      // Reset form
+
       setRating(0);
       setTitle("");
       setContent("");
+      setFormSuccess("Review submitted! Thank you for your feedback.");
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        "Failed to submit review. Please try again.";
+      setFormError(message);
     }
   };
-
-  // Review service not yet deployed - show disabled form
-  const isDisabled = true;
 
   return (
     <Card>
@@ -68,17 +83,8 @@ export default function ReviewForm({
               You must be logged in to write a review.
             </AlertDescription>
           </Alert>
-        ) : isDisabled ? (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Review submission is coming soon! The review service is currently
-              being integrated.
-            </AlertDescription>
-          </Alert>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Rating Selection */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
                 Your Rating *
@@ -113,7 +119,6 @@ export default function ReviewForm({
               </div>
             </div>
 
-            {/* Review Title */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
                 Review Title *
@@ -125,10 +130,10 @@ export default function ReviewForm({
                 placeholder="Sum up your review in one line"
                 maxLength={100}
                 required
+                disabled={isSubmitting}
               />
             </div>
 
-            {/* Review Content */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
                 Your Review *
@@ -142,19 +147,35 @@ export default function ReviewForm({
                 rows={6}
                 maxLength={2000}
                 required
+                disabled={isSubmitting}
               />
               <p className="text-xs text-muted-foreground mt-1">
                 {content.length}/2000 characters
               </p>
             </div>
 
-            {/* Submit Button */}
+            {formError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{formError}</AlertDescription>
+              </Alert>
+            )}
+
+            {formSuccess && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{formSuccess}</AlertDescription>
+              </Alert>
+            )}
+
             <Button
               type="submit"
-              disabled={rating === 0 || !title.trim() || !content.trim()}
+              disabled={
+                rating === 0 || !title.trim() || !content.trim() || isSubmitting
+              }
               className="w-full"
             >
-              Submit Review
+              {isSubmitting ? "Submitting..." : "Submit Review"}
             </Button>
           </form>
         )}

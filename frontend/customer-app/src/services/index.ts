@@ -10,3 +10,4 @@ export { useOrderService } from "./useOrderService";
 export { useRecommendationService } from "./useRecommendationService";
 export { useWishlistService } from "./useWishlistService";
 export { useAdminService } from "./useAdminService";
+export { useReviewService } from "./useReviewService";

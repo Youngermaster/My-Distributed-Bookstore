@@ -1,4 +1,4 @@
-import type { User } from './user';
+import type { User } from "./user";
 
 export interface LoginRequest {
   email: string;
@@ -9,19 +9,19 @@ export interface RegisterRequest {
   email: string;
   password: string;
   full_name: string;
+  phone?: string;
 }
 
 export interface AuthResponse {
-  user: User;
-  token: string;
+  access_token: string;
   refresh_token: string;
+  token_type: string;
+  expires_at: string;
+  user: User;
 }
 
 export interface RefreshTokenRequest {
   refresh_token: string;
 }
 
-export interface RefreshTokenResponse {
-  token: string;
-  refresh_token: string;
-}
+export type RefreshTokenResponse = AuthResponse;

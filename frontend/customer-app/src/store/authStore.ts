@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { authAPI } from '@/lib/api';
-import type { User } from '@/types/user';
-import type { LoginRequest, RegisterRequest } from '@/types/auth';
+import { create } from "zustand";
+import { authAPI } from "@/lib/api";
+import type { User } from "@/types/user";
+import type { LoginRequest, RegisterRequest } from "@/types/auth";
 
 interface AuthState {
   user: User | null;
@@ -19,8 +19,8 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  token: localStorage.getItem('token'),
-  isAuthenticated: !!localStorage.getItem('token'),
+  token: localStorage.getItem("token"),
+  isAuthenticated: !!localStorage.getItem("token"),
   isLoading: false,
   error: null,
 
@@ -28,20 +28,20 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await authAPI.login(credentials);
-      const { user, token, refresh_token } = response.data;
+      const { user, access_token, refresh_token } = response.data;
 
-      localStorage.setItem('token', token);
-      localStorage.setItem('refresh_token', refresh_token);
+      localStorage.setItem("token", access_token);
+      localStorage.setItem("refresh_token", refresh_token);
 
       set({
         user,
-        token,
+        token: access_token,
         isAuthenticated: true,
         isLoading: false,
         error: null,
       });
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Login failed';
+      const errorMessage = error.response?.data?.message || "Login failed";
       set({ isLoading: false, error: errorMessage });
       throw error;
     }
@@ -51,20 +51,21 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await authAPI.register(data);
-      const { user, token, refresh_token } = response.data;
+      const { user, access_token, refresh_token } = response.data;
 
-      localStorage.setItem('token', token);
-      localStorage.setItem('refresh_token', refresh_token);
+      localStorage.setItem("token", access_token);
+      localStorage.setItem("refresh_token", refresh_token);
 
       set({
         user,
-        token,
+        token: access_token,
         isAuthenticated: true,
         isLoading: false,
         error: null,
       });
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Registration failed';
+      const errorMessage =
+        error.response?.data?.message || "Registration failed";
       set({ isLoading: false, error: errorMessage });
       throw error;
     }
@@ -74,10 +75,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       await authAPI.logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('refresh_token');
+      localStorage.removeItem("token");
+      localStorage.removeItem("refresh_token");
       set({
         user: null,
         token: null,
@@ -88,7 +89,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   loadUser: async () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
       set({ isAuthenticated: false, user: null });
       return;
@@ -98,14 +99,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const response = await authAPI.me();
       set({
-        user: response.data.data,
+        user: response.data,
         isAuthenticated: true,
         isLoading: false,
         error: null,
       });
     } catch (error) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('refresh_token');
+      localStorage.removeItem("token");
+      localStorage.removeItem("refresh_token");
       set({
         user: null,
         token: null,

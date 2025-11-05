@@ -33,9 +33,11 @@ kubectl delete -f services/order-service/ --ignore-not-found=true
 kubectl delete -f services/cart-service/ --ignore-not-found=true
 kubectl delete -f services/user-service/ --ignore-not-found=true
 kubectl delete -f services/catalog-service/ --ignore-not-found=true
+kubectl delete -f services/notification-service/ --ignore-not-found=true
 
 # Infrastructure dependencies
 kubectl delete -f messaging/redis/ --ignore-not-found=true
+kubectl delete -f messaging/rabbitmq/ --ignore-not-found=true
 kubectl delete -f databases/ --ignore-not-found=true
 
 # Shared configuration

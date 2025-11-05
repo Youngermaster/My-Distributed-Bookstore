@@ -14,6 +14,7 @@ data:
   ADMIN_SERVICE_URL: "http://admin-service:8090"
   REVIEW_SERVICE_URL: "http://review-service:8088"
   INVENTORY_SERVICE_URL: "http://inventory-service:8086"
+  NOTIFICATION_SERVICE_URL: "http://notification-service:8089"
   RATE_LIMIT_ENABLED: "true"
   RATE_LIMIT_MAX: "100"
   RATE_LIMIT_WINDOW: "1m"

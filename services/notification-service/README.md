@@ -2,83 +2,64 @@
 
 ## Overview
 
-Handles all notifications (email, SMS, push) via RabbitMQ event consumption. Manages templates and delivery tracking.
+Golang microservice that listens to RabbitMQ events and dispatches transactional notifications (email/SMS/push). Currently ships with log-based senders for local development and persists an in-memory buffer of recent messages for quick inspection.
 
 ## Technology Stack
 
-- **Language**: TypeScript
-- **Runtime**: Node.js 18+ LTS
-- **Framework**: Express.js
-- **Email**: SendGrid / AWS SES
-- **SMS**: Twilio (optional)
-- **Database**: PostgreSQL 15
-- **ORM**: Prisma
-- **Messaging**: RabbitMQ
-- **Templates**: Handlebars
-- **Port**: HTTP: 8087
+- **Language**: Go 1.21
+- **Framework**: Fiber v2
+- **Messaging**: RabbitMQ (topic exchange)
+- **Logging**: Zerolog
+- **Port**: HTTP 8089 (`/health`, `/ready`, `/api/v1/notifications/recent`)
 
 ## Responsibilities
 
-- Email notifications (SendGrid/SES)
-- SMS notifications (Twilio - optional)
-- Push notifications (future)
-- Notification templates management
-- Delivery tracking and history
-- RabbitMQ consumer for all notification events
-- Template rendering with Handlebars
+- Consume RabbitMQ events (user, wishlist, cart, order)
+- Build per-channel notification messages
+- Dispatch via pluggable senders (log sender provided)
+- Retain last N notifications in memory for diagnostics
 
-## Database Schema
+## RabbitMQ Events
 
-**notifications**: id, user_id, type, channel, recipient, subject, body, status, sent_at, error_message, metadata (JSONB), created_at
-**notification_templates**: id, name, type, subject_template, body_template, variables (JSONB)
+| Routing Key        | Purpose                          |
+| ------------------ | -------------------------------- |
+| `user.registered`  | Welcome message after sign-up    |
+| `user.logged_in`   | Notify user about new logins     |
+| `wishlist.added`   | Inform user about wishlist adds  |
+| `wishlist.removed` | Notify on wishlist deletions     |
+| `cart.item_added`  | Confirm cart updates             |
+| `cart.item_updated`| Track cart quantity changes      |
+| `cart.item_removed`| Confirm removal from cart        |
+| `cart.cleared`     | Alert when cart is emptied       |
 
-## Notification Types
-
-- Order confirmation
-- Order shipped
-- Order delivered
-- Payment receipt
-- Password reset
-- Welcome email
-- Low stock alert (admin)
-
-## Events Consumed (RabbitMQ)
-
-- `user.registered` → Send welcome email
-- `order.created` → Send order confirmation
-- `order.shipped` → Send shipping notification
-- `order.delivered` → Send delivery confirmation
-- `payment.completed` → Send payment receipt
-- `inventory.low_stock` → Alert admin
+Additional routing keys can be bound via configuration.
 
 ## Environment Variables
 
 ```bash
-PORT=8087
-NODE_ENV=development
-DATABASE_URL=postgresql://bookstore:password@postgres:5432/notifications_db
+HTTP_PORT=8089
+ENV=development
+SERVICE_NAME=notification-service
+LOG_LEVEL=info
+SHUTDOWN_TIMEOUT=10s
 RABBITMQ_URL=amqp://bookstore:password@rabbitmq:5672/
-SENDGRID_API_KEY=SG.xxx
-FROM_EMAIL=noreply@bookstore.com
-TWILIO_ACCOUNT_SID=xxx
-TWILIO_AUTH_TOKEN=xxx
-TWILIO_PHONE_NUMBER=+1234567890
+RABBITMQ_EXCHANGE=bookstore.events
+RABBITMQ_QUEUE=notification-service
+RABBITMQ_ROUTING_KEYS=user.*,wishlist.*,cart.*,order.*
+RABBITMQ_PREFETCH_COUNT=10
 ```
 
 ## Getting Started
 
 ```bash
-npm install
-npm run dev
-npm test
+go mod tidy
+go run ./cmd/server
 ```
 
 ## Next Steps
 
-- [ ] Implement SendGrid integration
-- [ ] Create email templates
-- [ ] Set up RabbitMQ consumers
-- [ ] Add template rendering
-- [ ] Implement delivery tracking
-- [ ] Add SMS support (optional)
-- [ ] Write tests
+- [ ] Wire real email/SMS providers (SendGrid, Twilio, etc.)
+- [ ] Persist notification history (PostgreSQL)
+- [ ] Template rendering for rich content
+- [ ] Structured retries & dead-letter support
+- [ ] Unit tests for dispatcher/senders
