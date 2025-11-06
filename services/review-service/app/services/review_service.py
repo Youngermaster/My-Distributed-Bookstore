@@ -7,6 +7,7 @@ import logging
 
 from sqlalchemy import select, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
 from app.models.review import Review, ReviewVote
 from app.schemas.review import (
@@ -67,7 +68,13 @@ class ReviewService:
         )
 
         db.add(review)
-        await db.commit()
+        try:
+            await db.commit()
+        except IntegrityError as exc:
+            await db.rollback()
+            logger.warning("Integrity error creating review: %s", exc)
+            raise ValueError("Unable to create review") from exc
+
         await db.refresh(review)
 
         logger.info(f"Created review {review.id} for book {review.book_id}")

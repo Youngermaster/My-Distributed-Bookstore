@@ -34,12 +34,10 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
 
-    # Create database tables
+    # Ensure database tables exist (idempotent)
     async with engine.begin() as conn:
-        # In production, use Alembic migrations instead
-        if settings.DEBUG:
-            await conn.run_sync(Base.metadata.create_all)
-            logger.info("Database tables created")
+        await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database schema ensured")
 
     # Download NLTK data for sentiment analysis
     download_nltk_data()

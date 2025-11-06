@@ -1,345 +1,152 @@
-# Distributed Bookstore System
+# Distributed Bookstore
 
-A production-ready distributed bookstore built with microservices architecture on AWS EKS, implementing industry best practices and distributed systems principles from "Distributed Systems" by Tanenbaum & van Steen.
+A practical microservices implementation of the patterns documented in
+[`documentation/SERVICE_INTERACTIONS_AND_BEST_PRACTICES.md`](documentation/SERVICE_INTERACTIONS_AND_BEST_PRACTICES.md).
+The codebase showcases Tanenbaum & van Steen's distributed-systems
+principles with a polyglot stack running on Kubernetes/Minikube.
 
-## 🎯 Overview
+---
 
-This project demonstrates a real-world implementation of distributed systems concepts with **11 microservices** using a **polyglot architecture**:
+## At a Glance
 
-- **6 Go Services**: API Gateway, Catalog, User, Cart, Order, Inventory, Admin
-- **2 TypeScript Services**: Payment (Stripe), Notification (SendGrid)
-- **2 Python Services**: Review (ML/Sentiment Analysis), Recommendation (ML)
-- **Event-Driven Architecture** with RabbitMQ
-- **Comprehensive Observability** with Jaeger, Prometheus, Grafana
-- **React Frontend** with shadcn/ui
+| Service | Language | Purpose | Data Store |
+|---------|----------|---------|-----------|
+| **API Gateway** | Go (Fiber) | Single entrypoint, JWT enforcement, optional rate limiting, proxy to backend services | — |
+| **Catalog** | Go (Fiber + GORM) | Books, authors, categories, publishers, rich seed data | PostgreSQL |
+| **User** | Go | Registration, login, refresh tokens, profiles, wishlist, JWT issuance, publishes `user.*` / `wishlist.*` events | PostgreSQL |
+| **Cart** | Go | Session carts backed by Redis, publishes `cart.*` events | Redis |
+| **Order** | Go | Order capture skeleton (ready for future saga/payment integration) | PostgreSQL |
+| **Inventory** | Python (FastAPI) | Stock management & warehouse API | PostgreSQL |
+| **Review** | Python (FastAPI) | Reviews, helpful votes, TextBlob sentiment analysis | PostgreSQL |
+| **Recommendation** | Python (FastAPI) | Similar / trending / popular book recommendations with Redis caching hooks | (Redis planned) |
+| **Notification** | Go | RabbitMQ consumer that logs/dispatches notifications (email/SMS/push adapters ready to plug in) | — |
+| **Admin** | Go | WIP analytics façade (currently connects to catalog DB for reports) | PostgreSQL |
+| **Payment** | TypeScript (Express) | Stripe integration placeholder (webhook + REST stubs) | — |
 
-Built following principles from "Distributed Systems" by Tanenbaum & van Steen.
+Frontend: **React 18 + TypeScript** (`frontend/customer-app`) built with
+TanStack Router/Query, Zustand, shadcn/ui and Sonner toasts.
 
-## ✨ Key Features
+Messaging: **RabbitMQ topic exchange** with durable queues. Publishers:
+User Service (`user.registered`, `user.logged_in`, `wishlist.*`), Cart
+Service (`cart.item_added`, `cart.item_updated`, `cart.item_removed`, `cart.cleared`).
+Notification Service consumes and logs each message (hook for real
+email/SMS providers).
 
-### Core Services
-- **API Gateway**: Single entry point, JWT validation, rate limiting, circuit breaker
-- **Catalog Service**: Book management, search, categories, authors, publishers
-- **User Service**: Authentication, RBAC, profile management, addresses
-- **Cart Service**: Session & persistent carts, real-time pricing
-- **Order Service**: Saga orchestration, order lifecycle, distributed transactions
-- **Payment Service**: Stripe integration, refunds, webhook handling
-- **Inventory Service**: Stock tracking, reservations, low-stock alerts
-- **Notification Service**: Email/SMS via SendGrid/Twilio, template rendering
-- **Review Service**: Reviews, ratings, ML sentiment analysis (NLTK)
-- **Recommendation Service**: Collaborative & content-based filtering
-- **Admin Service**: Analytics, reporting, system monitoring
+Observability: Every service exposes `/health` and `/ready`; logs use
+structured output suitable for `kubectl logs` and local triage.
 
-### Architecture Patterns
-- Database per Service
-- Event-Driven (Saga choreography)
-- CQRS for complex queries
-- API Gateway pattern
-- Circuit Breaker
-- Service Discovery (K8s DNS)
+---
 
-## 🛠 Tech Stack
+## Running the System Locally (Minikube)
 
-### Backend Microservices (Polyglot)
-**Go Services** (1.21+):
-- Fiber v2 (web framework), GORM (ORM)
-- gRPC + Protocol Buffers
-- JWT authentication
+We keep two Kubernetes manifests:
 
-**TypeScript Services** (Node.js 18+):
-- Express.js, Prisma ORM
-- Stripe SDK, SendGrid
-
-**Python Services** (3.11+):
-- FastAPI, SQLAlchemy
-- scikit-learn, NLTK, pandas
-
-### Frontend
-- React 18+ with TypeScript
-- shadcn/ui components
-- TanStack Query v5
-- Zustand (state)
-- Tailwind CSS
-
-### Infrastructure & Data
-- **Databases**: PostgreSQL 15 (per-service)
-- **Caching**: Redis 7
-- **Messaging**: RabbitMQ 3.12
-- **Containers**: Docker & Docker Compose
-- **Orchestration**: Kubernetes (AWS EKS)
-- **Storage**: AWS S3, CloudFront CDN
-
-### Observability
-- **Tracing**: Jaeger
-- **Metrics**: Prometheus + Grafana
-- **Logging**: ELK Stack (Elasticsearch, Logstash, Kibana)
-
-## 🚀 Quick Start
+- `infrastructure/k8s/` – main manifests (kept aligned with upstream changes)
+- `infrastructure/k8s-dev/` – developer copy you can freely tweak
 
 ### Prerequisites
-- Docker & Docker Compose
-- Go 1.21+ (optional, for local dev)
-- Node.js 18+ (optional, for local dev)
-- Python 3.11+ (optional, for local dev)
-- kubectl (for K8s deployment)
 
-### Start All Services
+- Docker + Minikube (`minikube start`)
+- kubectl
+- `pnpm` (for the frontend) if you plan to run builds locally
+- Go 1.21+ / Python 3.11+ optional for direct service work
 
-```bash
-# Clone the repository
-git clone <repo-url>
-cd My-Distributed-Bookstore
-
-# Start all services with Docker Compose
-make services-start
-
-# View logs
-make logs
-
-# Check available commands
-make help
-```
-
-### Service URLs
-Once started, services are available at:
-- **API Gateway**: http://localhost:8080
-- **Frontend**: http://localhost:3000
-- **Jaeger UI**: http://localhost:16686
-- **RabbitMQ Management**: http://localhost:15672
-- **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3001
-
-### Test the APIs
-
-**Register a User:**
-```bash
-curl -X POST http://localhost:8082/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "john@example.com",
-    "password": "SecurePass123!",
-    "full_name": "John Doe"
-  }'
-```
-
-**Login:**
-```bash
-curl -X POST http://localhost:8082/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "john@example.com",
-    "password": "SecurePass123!"
-  }'
-```
-
-**Create a Book:**
-```bash
-curl -X POST http://localhost:8081/api/v1/books \
-  -H "Content-Type: application/json" \
-  -d '{
-    "isbn": "9780134190440",
-    "title": "The Go Programming Language",
-    "description": "The authoritative resource to writing clear and idiomatic Go",
-    "price": 44.99,
-    "stock_quantity": 50,
-    "language": "en",
-    "pages": 400,
-    "format": "paperback"
-  }'
-```
-
-**List Books:**
-```bash
-curl "http://localhost:8081/api/v1/books?limit=10&offset=0"
-```
-
-## 📁 Project Structure
-
-```
-My-Distributed-Bookstore/
-├── services/
-│   ├── api-gateway/             # Go - API Gateway
-│   ├── catalog-service/         # Go - Book catalog
-│   ├── user-service/            # Go - Authentication & users
-│   ├── cart-service/            # Go - Shopping cart
-│   ├── order-service/           # Go - Order processing & saga
-│   ├── payment-service/         # TypeScript - Stripe payments
-│   ├── inventory-service/       # Go - Stock management
-│   ├── notification-service/    # TypeScript - Email/SMS
-│   ├── review-service/          # Python - Reviews & ML
-│   ├── recommendation-service/  # Python - ML recommendations
-│   └── admin-service/           # Go - Admin & analytics
-├── frontend/
-│   └── customer-app/            # React + TypeScript
-├── proto/                       # Protobuf definitions
-├── infrastructure/
-│   └── k8s/                     # Kubernetes manifests
-├── scripts/                     # Build & deployment scripts
-├── docs/                        # Documentation
-├── docker-compose.yml           # Local development
-├── Makefile                     # Development commands
-├── CLAUDE.md                    # Full project documentation
-└── README.md
-```
-
-Each service follows clean architecture with:
-- `cmd/` - Entry points
-- `internal/` - Business logic (domain, repository, service, handler)
-- `pkg/` - Shared utilities
-- `proto/` - gRPC definitions
-- `migrations/` - Database migrations (if applicable)
-
-## Documentation
-
-- [DEVELOPMENT.md](docs/DEVELOPMENT.md) - Detailed development guide
-- [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) - Complete project overview
-- [CLAUDE.md](CLAUDE.md) - AI assistant guidance
-
-## Available Commands
+### 1. Build & Deploy to Minikube
 
 ```bash
-make help          # Show all available commands
-make up-build      # Build and start all services
-make down          # Stop all services
-make logs          # View all service logs
-make health        # Check service health
-make clean         # Clean up everything
+cd infrastructure/k8s-dev
+
+# Point Docker at Minikube
+eval "$(minikube docker-env)"
+
+# Build all service images and apply manifests
+./deploy.sh
 ```
 
-## Architecture Highlights
+The deploy script will:
 
-### Microservices Pattern
-- Each service has its own database (database-per-service)
-- Services communicate via REST APIs (gRPC ready)
-- Stateless design for horizontal scaling
+1. Build Docker images for each service with the `:latest` tag inside the
+   Minikube daemon
+2. Apply secrets/configmaps, Postgres + Redis + RabbitMQ manifests
+3. Roll out every microservice plus the React frontend
 
-### Clean Architecture
-Each service follows:
-1. **Domain Layer** - Business entities
-2. **Repository Layer** - Data access abstraction
-3. **Service Layer** - Business logic
-4. **Handler Layer** - HTTP endpoints
-5. **Middleware Layer** - Auth, logging, CORS
+### 2. Port-Forward for Local Access
 
-### Security
-- JWT authentication with expiration
-- bcrypt password hashing
-- Role-based access control
-- Input validation
-- SQL injection prevention
-- CORS configuration
-
-### Observability
-- Centralized logging service
-- Structured logging with zerolog
-- Health check endpoints
-- Distributed tracing support
-
-## 🔌 Service Ports
-
-| Service | HTTP | gRPC | Database |
-|---------|------|------|----------|
-| API Gateway | 8080 | - | - |
-| Catalog | 8081 | 50051 | catalog_db |
-| User | 8082 | 50052 | users_db |
-| Cart | 8083 | 50053 | Redis |
-| Order | 8084 | 50054 | orders_db |
-| Payment | 8085 | 50055 | payments_db |
-| Inventory | 8086 | 50056 | inventory_db |
-| Notification | 8087 | - | notifications_db |
-| Review | 8088 | 50058 | reviews_db |
-| Recommendation | 8089 | 50059 | recommendations_db |
-| Admin | 8090 | 50060 | admin_db |
-
-**Infrastructure:**
-- PostgreSQL: 5432
-- Redis: 6379
-- RabbitMQ: 5672 (AMQP), 15672 (Management)
-- Jaeger: 16686 (UI), 6831 (Agent)
-- Prometheus: 9090
-- Grafana: 3001
-
-## Environment Variables
-
-Each service can be configured via environment variables. See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for details.
-
-## Distributed Systems Principles
-
-This project implements key concepts from Tanenbaum & van Steen:
-
-- **Transparency**: Location-independent service access
-- **Scalability**: Stateless services, database per service
-- **Fault Tolerance**: Health checks, graceful shutdown
-- **Consistency**: Strong consistency for critical operations
-- **Security**: Authentication, authorization, encryption
-- **Communication**: REST APIs, structured messaging
-
-## 🎯 Development Roadmap
-
-### Phase 1: Foundation ✅
-- [x] Project scaffolding
-- [x] 11 microservices structure
-- [x] Proto definitions
-- [x] Docker configurations
-- [x] Frontend scaffold
-
-### Phase 2: Core Implementation (In Progress)
-- [ ] Implement Go service logic
-- [ ] Implement TypeScript services
-- [ ] Implement Python ML services
-- [ ] Database migrations
-- [ ] Event bus (RabbitMQ)
-
-### Phase 3: Frontend
-- [ ] Initialize React app
-- [ ] Install shadcn/ui
-- [ ] Implement pages & components
-- [ ] API integration
-
-### Phase 4: Observability
-- [ ] Jaeger distributed tracing
-- [ ] Prometheus metrics
-- [ ] Grafana dashboards
-- [ ] ELK Stack logging
-
-### Phase 5: Deployment
-- [ ] Kubernetes manifests
-- [ ] AWS EKS deployment
-- [ ] CI/CD pipeline (GitHub Actions)
-- [ ] Production monitoring
-
-## 🤝 Getting Started with Development
-
-Each microservice has its own README with:
-- Service overview and responsibilities
-- Technology stack
-- Database schema
-- API endpoints
-- gRPC methods
-- Events published/consumed
-- Environment variables
-- Next steps for implementation
-
-**Start with any service:**
 ```bash
-cd services/catalog-service
-cat README.md
+# In separate terminals
+kubectl port-forward -n bookstore-dev svc/frontend 3000:80
+kubectl port-forward -n bookstore-dev svc/api-gateway 8080:8080
+kubectl port-forward -n bookstore-dev svc/rabbitmq 15672:15672  # RabbitMQ UI (optional)
 ```
 
-**Run individual service:**
+Frontend will be available at <http://localhost:3000> and will talk to
+services via the API Gateway at <http://localhost:8080>.
+
+### 3. Tear Down
+
 ```bash
-cd services/catalog-service
-docker-compose up
+cd infrastructure/k8s-dev
+./undeploy.sh
 ```
 
-## License
+---
 
-Apache License 2.0
+## Working on Individual Services
 
-## Contributing
+- **Go services**: standard layout (`cmd/`, `internal/`, `pkg/`). Run `go build ./...` inside the service folder.
+- **Python services**: FastAPI apps under `app/` with Alembic migrations. Use uvicorn for local runs (`pip install -r requirements.txt`).
+- **Notification service**: Go Fiber app with RabbitMQ consumer – tail logs via `kubectl logs -n bookstore-dev deployment/notification-service -f` to observe events emitted by Cart/User services.
+- **Frontend**: `pnpm install && pnpm dev` (the production build runs automatically in the cluster via Nginx).
 
-Contributions are welcome! Please read the development guide first.
+Useful local commands:
 
-## Author
+```bash
+# Frontend build check
+cd frontend/customer-app
+pnpm build
 
-Built with best practices in distributed systems architecture.
+# Run Go tests/build for a service
+cd services/user-service
+go test ./...
+
+go build ./...
+
+# FastAPI review service local run
+cd services/review-service
+uvicorn app.main:app --reload --port 8088
+```
+
+---
+
+## Event Catalogue (Current)
+
+| Topic | Producer | Consumer | Description |
+|-------|----------|----------|-------------|
+| `user.registered` | User Service | Notification Service | Welcome workflow |
+| `user.logged_in` | User Service | Notification Service | Security/login alerts |
+| `wishlist.added` & `wishlist.removed` | User Service | Notification Service | Wishlist instrumentation |
+| `wishlist.cleared` | User Service | Notification Service | Wishlist reset |
+| `cart.item_added`, `cart.item_updated`, `cart.item_removed`, `cart.cleared` | Cart Service | Notification Service | Cart engagement tracking |
+
+(Extend `services/notification-service/internal/notification/message.go`
+with new templates as you add events.)
+
+---
+
+## Documentation & Further Reading
+
+- [`documentation/SERVICE_INTERACTIONS_AND_BEST_PRACTICES.md`](documentation/SERVICE_INTERACTIONS_AND_BEST_PRACTICES.md)
+  – System interactions, architecture principles, deployment order
+- `CLAUDE.md` – Historical planning notes & backlog items
+- Per-service `README.md` files for service-specific behaviour
+
+---
+
+## Roadmap / Known Gaps
+
+- Payment service & admin analytics are scaffolds awaiting full Stripe / reporting integration
+- Observability stack (Prometheus/Grafana/Jaeger) intentionally omitted from the dev manifests to keep local setup lightweight
+- Order workflow & inventory reservations will evolve into a saga once payment integration lands
+
+Contributions and experiments are welcome—use the `k8s-dev` manifests to
+iterate without disturbing the main configuration.
